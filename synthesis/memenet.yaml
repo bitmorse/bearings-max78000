@@ -1,0 +1,59 @@
+---
+# CHW configuration for memenet
+
+arch: memenet
+dataset: memes
+
+# Define layer parameters in order of the layer sequence
+layers:
+  - pad: 1
+    activate: ReLU
+    out_offset: 0x2000
+    processors: 0x0000.0000.0000.0007
+    data_format: HWC
+    op: conv2d
+  - pad: 1
+    max_pool: 2
+    pool_stride: 2
+    activate: ReLU
+    out_offset: 0
+    processors: 0xffff.ffff.0000.0000
+    op: conv2d
+  - pad: 1
+    max_pool: 2
+    pool_stride: 2
+    activate: ReLU
+    out_offset: 0x2000
+    processors: 0x0000.0000.00ff.ffff
+    op: conv2d
+  - pad: 1
+    max_pool: 2
+    pool_stride: 2
+    activate: ReLU
+    out_offset: 0x0
+    processors: 0x00ff.ffff.0000.0000
+    op: conv2d
+  - pad: 1
+    activate: ReLU
+    out_offset: 0x2000
+    processors: 0x0000.0000.00ff.ffff
+    op: conv2d
+
+  - max_pool: 2
+    pool_stride: 2
+    out_offset: 0x0
+    processors: 0x0000.0000.00ff.ffff
+    op: None
+
+  - op: mlp
+    flatten: true
+    out_offset: 0x2000
+    processors: 0x0000.0000.00ff.ffff
+  - op: mlp
+    out_offset: 0x0
+    processors: 0xffff.ffff.0000.0000
+  - op: mlp
+    out_offset: 0x2000
+    output_width: 32
+    processors: 0x0000.0000.0000.ffff
+
