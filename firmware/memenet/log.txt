@@ -1,4 +1,4 @@
-ai8xize.py --test-dir synthed_net --prefix memenet --checkpoint-file trained/qat_best-q.pth.tar --config-file networks/memenet.yaml --sample-input tests/sample_memes.npy --device MAX78000 --compact-data --mexpress --timer 0 --display-checkpoint --verbose --overwrite
+ai8xize.py --test-dir synthed_net --mlator --prefix memenet --checkpoint-file trained/qat_best-q.pth.tar --config-file networks/memenet.yaml --sample-input tests/sample_memes.npy --device MAX78000 --compact-data --mexpress --timer 0 --display-checkpoint --verbose --overwrite
 MAX78000
 
 memenet
@@ -12849,7 +12849,6 @@ Layer 7               5,516
                  ==========
 Total                34,926 cycles
 
-NOTICE: Layer 7: Use --mlator to optimize cnn_unload() for 8-bit output values.
 SUMMARY OF OPS
 Hardware: 1,183,844 ops (1,163,264 macc; 20,580 comp; 0 add; 0 mul; 0 bitwise)
   Layer 0: 114,688 ops (110,592 macc; 4,096 comp; 0 add; 0 mul; 0 bitwise)
