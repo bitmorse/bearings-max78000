@@ -63,6 +63,7 @@ def memes_get_datasets(data, load_train=False, load_test=False):
             transforms.ToPILImage(),
             #transforms.RandomAffine(degrees=20, translate=(0.3, 0.3), scale=(0.5,1.5), fill=0),
             #transforms.ColorJitter(brightness=[0.5, 1.7], contrast=[0.3, 1.1], saturation=[0.3,1.1], hue=0),
+            transforms.Grayscale(num_output_channels=1),
             transforms.GaussianBlur(kernel_size=5),
             #transforms.RandomGrayscale(p=0.2),
             #transforms.RandomCrop(size=50),
@@ -79,6 +80,8 @@ def memes_get_datasets(data, load_train=False, load_test=False):
     if load_test:
         test_transform = transforms.Compose([
             transforms.ToPILImage(),
+            #make it single channel
+            transforms.Grayscale(num_output_channels=1),
             # 960 and 720 are not random, but dimension of input test img
             #transforms.CenterCrop((960,720)),
             transforms.Resize((32,32)),#was 64
@@ -103,8 +106,8 @@ Dataset description
 datasets = [
     {
         'name': 'memes',
-        'input': (3, 32, 32),
-        'output': (3, 32, 32),
+        'input': (1, 32, 32),
+        'output': (1, 32, 32),
         'loader': memes_get_datasets,
     }
 ]

@@ -22,7 +22,7 @@ class MemeNet(nn.Module):
     """
     7-Layer CNN - Lightweight image classification
     """
-    def __init__(self, num_classes=0, dimensions=(28, 28), num_channels=1, bias=False, **kwargs):
+    def __init__(self, num_classes=0, dimensions=(32, 32), num_channels=1, bias=False, **kwargs):
         super().__init__()
 
         # assert dimensions[0] == dimensions[1]  # Only square supported
@@ -52,7 +52,7 @@ class MemeNet(nn.Module):
         
         '''
         ConvTranspose2d:
-        Kernel sizes must be 3×3.
+        Kernel sizes must be 3x3.
         Padding can be 0, 1, or 2.
         Stride is fixed to [2, 2]. Output padding is fixed to 1.
         '''
@@ -71,7 +71,7 @@ class MemeNet(nn.Module):
         #dim=32*32*4
         
         self.conv4 = ai8x.Conv2d(in_channels = 4, out_channels = num_channels, kernel_size = 3,
-                                          padding=1, bias=bias, **kwargs)
+                                          padding=1, bias=bias, wide=False, **kwargs)
         
         
         #dim=32x32xnum_channels

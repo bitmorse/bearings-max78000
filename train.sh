@@ -3,19 +3,35 @@
 #setup vars for hyperparams
 export LR=0.001
 export OPTIMIZER=adam
-export EPOCHS=30
-export BATCH_SIZE=4
+export EPOCHS=12
+export BATCH_SIZE=8
 
 export MODEL=memenet
 export DATASET=memes
 export LOSS="--regression" 
 #export SOFTMAX="--softmax"
 #export STREAMING="--fifo"
-export MLATOR="--mlator" #needed when using 4 bit?
+#export MLATOR="--mlator" #needed when using 4 bit? do not use if weight_bits: 8?
 
 #make sure pip install pillow==9.0.1 is installed for Tensorboard
 
 BEST_QCKPT=../ai8x-synthesis/trained/qat_best-q.pth.tar
+BEST_CKPT_TRAINED_FOLDER=../ai8x-synthesis/trained/qat_best.pth.tar
+
+#check if exists and ask if should delete
+if [ -f "$BEST_QCKPT" ]; then
+    echo "BASH: Best QAT checkpoint found, delete and train new model? (y/n)"
+    read answer
+    if [ "$answer" != "${answer#[Yy]}" ] ;then
+        echo "BASH: Deleting best QAT checkpoint..."
+        rm $BEST_QCKPT
+        rm $BEST_CKPT_TRAINED_FOLDER
+    else
+        echo "BASH: Continuing with existing best QAT checkpoint..."
+    fi
+fi
+
+
 #check if exists
 if [ ! -f "$BEST_QCKPT" ]; then
     echo "BASH: Best QAT checkpoint not found, training new model..."
@@ -40,6 +56,9 @@ if [ ! -f "$BEST_QCKPT" ]; then
 
     # Quantize the model
     BEST_CKPT=../ai8x-training/latest_log_dir/qat_best.pth.tar
+    echo "BASH: Copy best checkpoint to synthesis folder..."
+    cp $BEST_CKPT $BEST_CKPT_TRAINED_FOLDER
+
     echo "BASH: Quantizing the model..."
     echo "BASH: this will not work if torch layers were used during training!"
     cd ../ai8x-synthesis

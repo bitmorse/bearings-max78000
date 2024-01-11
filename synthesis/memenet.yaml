@@ -3,11 +3,11 @@ dataset: memes
 
 # Define layer parameters in order of the layer sequence
 layers:
-  # Layer 0: Conv2d with ReLU, 3 input channels, 4 output channels
+  # Layer 0: Conv2d with ReLU, 1 input channels, 4 output channels
   - pad: 1
     activate: ReLU
     out_offset: 0x4000
-    processors: 0x0000000000000007  # 3 processors for 3 input channels
+    processors: 0x0000000000000001  # 31 processors for 1 input channels
     op: conv2d
     kernel_size: 3x3
     data_format: HWC
