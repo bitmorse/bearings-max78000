@@ -17,3 +17,4 @@ Condition monitoring of bearings on MAX78000
 * If setup was successful, you can run ´train.sh´ to start training. If you don't need to retrain, you can just directly compile and flash the C code.
 * ai8x-training and synthesis can be cloned and run on an Ubuntu server. The synthed_net folder can be then copied to a Mac in order to debug locally.
 * Follow this [guide](https://analog-devices-msdk.github.io/msdk/USERGUIDE/#visual-studio-code) on MSDK with Visual Studio Code, to find out how to debug on Mac.
+* the loss function can only be chosen via an argument of training.py (--regression	for regression (MSE), otherwise default is classification)

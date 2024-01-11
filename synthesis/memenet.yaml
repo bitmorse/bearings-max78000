@@ -1,59 +1,83 @@
----
-# CHW configuration for memenet
-
 arch: memenet
 dataset: memes
 
 # Define layer parameters in order of the layer sequence
 layers:
+  # Layer 0: Conv2d with ReLU, 3 input channels, 4 output channels
   - pad: 1
     activate: ReLU
-    out_offset: 0x2000
-    processors: 0x0000.0000.0000.0007
+    out_offset: 0x4000
+    processors: 0x0000000000000007  # 3 processors for 3 input channels
+    op: conv2d
+    kernel_size: 3x3
     data_format: HWC
-    op: conv2d
-  - pad: 1
-    max_pool: 2
-    pool_stride: 2
-    activate: ReLU
-    out_offset: 0
-    processors: 0xffff.ffff.0000.0000
-    op: conv2d
-  - pad: 1
-    max_pool: 2
-    pool_stride: 2
-    activate: ReLU
-    out_offset: 0x2000
-    processors: 0x0000.0000.00ff.ffff
-    op: conv2d
-  - pad: 1
-    max_pool: 2
-    pool_stride: 2
-    activate: ReLU
-    out_offset: 0x0
-    processors: 0x00ff.ffff.0000.0000
-    op: conv2d
-  - pad: 1
-    activate: ReLU
-    out_offset: 0x2000
-    processors: 0x0000.0000.00ff.ffff
-    op: conv2d
+    quantization: 4
 
+  # Layer 1: MaxPool and Conv2d with ReLU, 4 input channels, 8 output channels
   - max_pool: 2
     pool_stride: 2
-    out_offset: 0x0
-    processors: 0x0000.0000.00ff.ffff
-    op: None
+    pad: 1
+    activate: ReLU
+    out_offset: 0x0000
+    processors: 0x000000000000000f  # 4 processors for 4 input channels
+    op: conv2d
+    kernel_size: 3x3
+    quantization: 4
 
+  # Layer 2: MaxPool and Conv2d with ReLU, 8 input channels, 16 output channels
+  - max_pool: 2
+    pool_stride: 2
+    pad: 1
+    activate: ReLU
+    out_offset: 0x4000
+    processors: 0x00000000000000ff  # 8 processors for 8 input channels
+    op: conv2d
+    kernel_size: 3x3
+    quantization: 4
+
+  # Layer 3: Linear with ReLU (Flattening 2D to 1D), 16 input channels
   - op: mlp
+    activate: ReLU
     flatten: true
-    out_offset: 0x2000
-    processors: 0x0000.0000.00ff.ffff
-  - op: mlp
-    out_offset: 0x0
-    processors: 0xffff.ffff.0000.0000
-  - op: mlp
-    out_offset: 0x2000
-    output_width: 32
-    processors: 0x0000.0000.0000.ffff
+    out_offset: 0x0000
+    processors: 0x000000000000ffff  # 16 processors for 16 input channels
+    output_processors: 0xfffffffffffff000
+    in_dim: [8, 8]
+    quantization: 4
 
+  # Layer 4: Linear with ReLU (Unflattening 1D back to 2D), 100 input channels
+  - op: mlp
+    activate: ReLU
+    out_offset: 0x4000
+    processors: 0xfffffffffffff000  # 52 processors for 100 channels.
+    output_processors: 0xffffffffffffffff
+    quantization: 4
+
+  # Layer 5: ConvTranspose2d with ReLU, 16 input channels, 8 output channels
+  - pad: 1
+    in_dim: [8, 8]
+    activate: ReLU
+    out_offset: 0x0000
+    processors: 0x000000000000ffff  # 16 processors for 16 input channels
+    op: convtranspose2d
+    kernel_size: 3x3
+    stride: 2
+    quantization: 4
+
+  # Layer 6: ConvTranspose2d with ReLU, 8 input channels, 4 output channels
+  - pad: 1
+    activate: ReLU
+    out_offset: 0x4000
+    processors: 0x00000000000000ff  # 8 processors for 8 input channels
+    op: convtranspose2d
+    kernel_size: 3x3
+    stride: 2
+    quantization: 4
+
+  # Layer 7: Conv2d (Final Layer), 4 input channels, 3 output channels
+  - pad: 1
+    out_offset: 0x0000
+    processors: 0x000000000000000f  # 4 processors for 4 input channels
+    op: conv2d
+    kernel_size: 3x3
+    quantization: 4

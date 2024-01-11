@@ -38,9 +38,13 @@ class MemesDataset(Dataset):
     def __getitem__(self, idx):
         img_path = os.path.join(self.img_dir, self.img_labels.iloc[idx, 0])
         image = read_image(img_path)
-        label = self.img_labels.iloc[idx, 1]
+        #label = self.img_labels.iloc[idx, 1]
+        label = image
+        
         if self.transform:
             image = self.transform(image)
+            label = image
+            
             #t = transforms.ToPILImage()
             #im = t(image)
             #im.save("{}.jpeg".format(time.time()))
@@ -57,13 +61,14 @@ def memes_get_datasets(data, load_train=False, load_test=False):
     if load_train:
         train_transform = transforms.Compose([
             transforms.ToPILImage(),
-            transforms.RandomAffine(degrees=20, translate=(0.3, 0.3), scale=(0.5,1.5), fill=0),
-            transforms.ColorJitter(brightness=[0.5, 1.7], contrast=[0.3, 1.1], saturation=[0.3,1.1], hue=0),
+            #transforms.RandomAffine(degrees=20, translate=(0.3, 0.3), scale=(0.5,1.5), fill=0),
+            #transforms.ColorJitter(brightness=[0.5, 1.7], contrast=[0.3, 1.1], saturation=[0.3,1.1], hue=0),
             transforms.GaussianBlur(kernel_size=5),
-            transforms.RandomGrayscale(p=0.2),
+            #transforms.RandomGrayscale(p=0.2),
             #transforms.RandomCrop(size=50),
-            transforms.Resize((64,64)),
+            transforms.Resize((32,32)),#was 64
             transforms.ToTensor(),
+            transforms.Normalize(mean=[0.5], std=[0.5]),
             ai8x.normalize(args=args)
         ])
 
@@ -76,8 +81,9 @@ def memes_get_datasets(data, load_train=False, load_test=False):
             transforms.ToPILImage(),
             # 960 and 720 are not random, but dimension of input test img
             #transforms.CenterCrop((960,720)),
-            transforms.Resize((64,64)),
+            transforms.Resize((32,32)),#was 64
             transforms.ToTensor(),
+            transforms.Normalize(mean=[0.5], std=[0.5]),
             ai8x.normalize(args=args)
         ])
 
@@ -97,8 +103,8 @@ Dataset description
 datasets = [
     {
         'name': 'memes',
-        'input': (3, 64, 64),
-        'output': list(map(str, range(4))),
+        'input': (3, 32, 32),
+        'output': (3, 32, 32),
         'loader': memes_get_datasets,
     }
 ]
