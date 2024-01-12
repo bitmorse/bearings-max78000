@@ -8,3 +8,9 @@
 # **********************************************************
 
 # Add your config here!
+
+# Set hardware floating-point acceleration
+MFLOAT_ABI = soft
+
+# Include the CMSIS-DSP library
+LIB_CMSIS_DSP = 1
