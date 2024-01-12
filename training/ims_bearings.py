@@ -15,6 +15,7 @@ from torchvision import transforms
 from torchvision.io import read_image
 
 import ai8x
+import torch
 
 import os
 import pandas as pd
@@ -26,34 +27,38 @@ from PIL import Image
 """
 Custom image dataset class
 """
-class MemesDataset(Dataset):
-    def __init__(self, img_dir, transform=None):
-        self.img_labels = pd.read_csv(os.path.join(img_dir, "labels.txt"))
-        self.img_dir = img_dir
-        self.transform = transform
+class IMSBearingsDataset(Dataset):
 
+    def __init__(self, data_dir=None, transform=None, filename="ims_bearings_train_exp1_b3_spectrograms"):
+        self.data_dir = data_dir
+        self.transform = transform
+        self.filename = filename
+        self.samples = torch.load(os.path.join(self.data_dir, "%s"%self.filename))
+        #shuffle samples
+        torch.manual_seed(0)
+        ra = torch.randperm(self.samples.shape[0])
+        self.samples = self.samples[ra]
+        
+        self.samples_len = self.samples.shape[0]
+        
     def __len__(self):
-        return len(self.img_labels)
+        return self.samples_len
 
     def __getitem__(self, idx):
-        img_path = os.path.join(self.img_dir, self.img_labels.iloc[idx, 0])
-        image = read_image(img_path)
-        #label = self.img_labels.iloc[idx, 1]
-        label = image
+
+        spectrogram = self.samples[idx]
+        label = spectrogram
         
         if self.transform:
-            image = self.transform(image)
-            label = image
+            spectrogram = self.transform(spectrogram)
+            label = spectrogram
             
-            #t = transforms.ToPILImage()
-            #im = t(image)
-            #im.save("{}.jpeg".format(time.time()))
-        return image, label
+        return spectrogram, label
 
 """
 Dataloader function
 """
-def memes_get_datasets(data, load_train=False, load_test=False):
+def ims_bearings_get_datasets(data, load_train=False, load_test=False):
    
     (data_dir, args) = data
     # data_dir = data
@@ -61,39 +66,23 @@ def memes_get_datasets(data, load_train=False, load_test=False):
     if load_train:
         train_transform = transforms.Compose([
             transforms.ToPILImage(),
-            #transforms.RandomAffine(degrees=20, translate=(0.3, 0.3), scale=(0.5,1.5), fill=0),
-            #transforms.ColorJitter(brightness=[0.5, 1.7], contrast=[0.3, 1.1], saturation=[0.3,1.1], hue=0),
-            transforms.Grayscale(num_output_channels=1),
-            transforms.GaussianBlur(kernel_size=5),
-            #transforms.RandomGrayscale(p=0.2),
-            #transforms.RandomCrop(size=50),
-            transforms.Resize((16,16)),#was 64
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.5], std=[0.5]),
             ai8x.normalize(args=args)
         ])
 
-        train_dataset = MemesDataset(img_dir=os.path.join(data_dir, "memes", "train"), transform=train_transform)
+        train_dataset = IMSBearingsDataset(data_dir=os.path.join(data_dir, "ims_bearings", "train"), transform=train_transform, filename="ims_bearings_train_exp1_b3_spectrograms.pt")
     else:
         train_dataset = None
 
     if load_test:
         test_transform = transforms.Compose([
             transforms.ToPILImage(),
-            #make it single channel
-            transforms.Grayscale(num_output_channels=1),
-            # 960 and 720 are not random, but dimension of input test img
-            #transforms.CenterCrop((960,720)),
-            transforms.Resize((16,16)),#was 64
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.5], std=[0.5]),
             ai8x.normalize(args=args)
         ])
 
-        test_dataset = MemesDataset(img_dir=os.path.join(data_dir, "memes", "test"), transform=test_transform)
+        test_dataset = IMSBearingsDataset(data_dir=os.path.join(data_dir, "ims_bearings", "test"), transform=test_transform, filename="ims_bearings_test_exp1_b3_spectrograms.pt")
 
-        # if args.truncate_testset:
-        #     test_dataset.data = test_dataset.data[:1]
     else:
         test_dataset = None
 
@@ -105,10 +94,10 @@ Dataset description
 """
 datasets = [
     {
-        'name': 'memes',
-        'input': (1, 16, 16),
-        'output': (1, 16, 16),
-        'loader': memes_get_datasets,
+        'name': 'ims_bearings',
+        'input': (1, 64, 64),
+        'output': (1, 64, 64),
+        'loader': ims_bearings_get_datasets,
     }
 ]
 

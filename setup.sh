@@ -2,7 +2,7 @@
 # This script creates symlinks from this repo to the ai8x-training and ai8x-synthesis repos
 
 export MODEL=memenet
-export DATASET=memes
+export DATASET=ims_bearings
 export REPONAME=bearings-max78000
 
 echo "BASH: Linking qat_policy_$MODEL.yaml to ai8x-training/policies/qat_policy_$MODEL.yaml..."
@@ -16,3 +16,6 @@ ln -sf ../../$REPONAME/training/$DATASET.py ../ai8x-training/datasets/$DATASET.p
 
 echo "BASH: Linking $MODEL.yaml to ai8x-synthesis/networks/$MODEL.yaml..."
 ln -sf ../../$REPONAME/synthesis/$MODEL.yaml ../ai8x-synthesis/networks/$MODEL.yaml
+
+echo "BASH: Linking subfolders inside data folder to ai8x-synthesis/data..."
+ln -sf ../../$REPONAME/data/$DATASET ../ai8x-training/data/$DATASET
