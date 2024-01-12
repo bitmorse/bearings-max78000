@@ -6,8 +6,8 @@ export OPTIMIZER=adam
 export EPOCHS=12
 export BATCH_SIZE=8
 
-export MODEL=memenet
-export DATASET=memes
+export MODEL=bearingnet
+export DATASET=ims_bearings
 export LOSS="--regression" 
 #export SOFTMAX="--softmax"
 #export STREAMING="--fifo"

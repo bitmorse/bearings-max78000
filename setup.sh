@@ -1,7 +1,7 @@
 #!/bin/bash
 # This script creates symlinks from this repo to the ai8x-training and ai8x-synthesis repos
 
-export MODEL=memenet
+export MODEL=bearingnet
 export DATASET=ims_bearings
 export REPONAME=bearings-max78000
 

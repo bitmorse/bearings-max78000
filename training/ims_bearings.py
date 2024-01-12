@@ -35,9 +35,9 @@ class IMSBearingsDataset(Dataset):
         self.filename = filename
         self.samples = torch.load(os.path.join(self.data_dir, "%s"%self.filename))
         #shuffle samples
-        torch.manual_seed(0)
-        ra = torch.randperm(self.samples.shape[0])
-        self.samples = self.samples[ra]
+        #torch.manual_seed(0)
+        #ra = torch.randperm(self.samples.shape[0])
+        #self.samples = self.samples[ra]
         
         self.samples_len = self.samples.shape[0]
         

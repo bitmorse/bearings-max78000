@@ -1,46 +1,54 @@
 ###################################################################################################
-# MemeNet network
-# Marco Giordano
-# Center for Project Based Learning
-# 2022 - ETH Zurich
+# BearingNet network
+# Sam Sulaimanov
+# 2023
 ###################################################################################################
 """
-MemeNet network description
+BearingNet network description
 """
 from signal import pause
 from torch import nn
 
 import ai8x
 
-import matplotlib
-import matplotlib.pyplot as plt
 
 """
 Network description class
 """
-class MemeNet(nn.Module):
+class BearingNet(nn.Module):
     """
     7-Layer CNN - Lightweight image classification
     """
-    def __init__(self, num_classes=0, dimensions=(16, 16), num_channels=1, bias=False, **kwargs):
+    def __init__(self, num_classes=0, dimensions=(64, 64), num_channels=1, bias=False, **kwargs):
         super().__init__()
 
-        # assert dimensions[0] == dimensions[1]  # Only square supported
+        assert dimensions[0] == dimensions[1]  # Only square supported
+        assert dimensions[0] in [64]  # Only these sizes supported
+        
+        #print("num_channels: ",num_channels)
+        #print(dimensions)
 
         # Keep track of image dimensions so one constructor works for all image sizes
         dim_x, dim_y = dimensions
 
         self.conv1 = ai8x.FusedConv2dReLU(in_channels = num_channels, out_channels = 4, kernel_size = 3,
                                           padding=1, bias=bias, **kwargs)
+        #dim=64*64*4
+        
+        
+        self.conv2 = ai8x.FusedMaxPoolConv2dReLU(in_channels = 4, out_channels = 4, kernel_size = 3,
+                                          padding=1, pool_size=2,pool_stride=2,pool_dilation=1, bias=bias, **kwargs)
+        dim_x //= 2 
+        dim_y //= 2
         #dim=32*32*4
         
-        self.conv2 = ai8x.FusedMaxPoolConv2dReLU(in_channels = 4, out_channels = 8, kernel_size = 3,
+        self.conv3 = ai8x.FusedMaxPoolConv2dReLU(in_channels = 4, out_channels = 8, kernel_size = 3,
                                           padding=1, pool_size=2,pool_stride=2,pool_dilation=1, bias=bias, **kwargs)
         dim_x //= 2 
         dim_y //= 2
         #dim=16*16*8
         
-        self.conv3 = ai8x.FusedMaxPoolConv2dReLU(in_channels = 8, out_channels = 16, kernel_size = 3,
+        self.conv4 = ai8x.FusedMaxPoolConv2dReLU(in_channels = 8, out_channels = 16, kernel_size = 3,
                                           padding=1, pool_size=2,pool_stride=2,pool_dilation=1,bias=bias, **kwargs)
         dim_x //= 2  
         dim_y //= 2
@@ -70,13 +78,20 @@ class MemeNet(nn.Module):
         dim_y *= 2
         #dim=32*32*4
         
-        self.conv4 = ai8x.Conv2d(in_channels = 4, out_channels = num_channels, kernel_size = 3,
+        self.deconv3 = ai8x.FusedConvTranspose2dReLU(in_channels = 4, out_channels = 4, kernel_size = 3, stride=2,
+                                          padding=1, bias=bias, **kwargs)
+        dim_x *= 2  
+        dim_y *= 2
+        #dim=64*64*4
+        
+        self.conv5 = ai8x.Conv2d(in_channels = 4, out_channels = num_channels, kernel_size = 3,
                                           padding=1, bias=bias, wide=True, **kwargs)
         
         
-        #dim=32x32xnum_channels
-        assert dim_x == 16
-        assert dim_y == 16
+        #print("dim_x: ",dim_x)
+        #print("dim_y: ",dim_y)
+        assert dim_x == 64
+        assert dim_y == 64
         assert bias == False
         
         for m in self.modules():
@@ -88,43 +103,39 @@ class MemeNet(nn.Module):
     """
     def forward(self, x):  # pylint: disable=arguments-differ
         """Forward prop"""
-        # # Data plotting - for debug
-        # matplotlib.use('MacOSX')
-        # plt.imshow(x[1, 0], cmap="gray")
-        # plt.show()
-        # breakpoint()
-        
         x = self.conv1(x)
         x = self.conv2(x)
         x = self.conv3(x)
-
+        x = self.conv4(x)
+        
         #flatten
         x = x.view(x.size(0), -1)
         x = self.fc1(x)
         x = self.z(x)
         
-        #unflatten
-        x = x.view(x.size(0), 16, 4, 4)
+        #unflatten to dim=16*16*8
+        x = x.view(x.size(0), 16, 8, 8)
         x = self.deconv1(x)
         x = self.deconv2(x)
-        x = self.conv4(x)
+        x = self.deconv3(x)
+        x = self.conv5(x)
         
         return x
 
 
-def memenet(pretrained=False, **kwargs):
+def bearingnet(pretrained=False, **kwargs):
     """
-    Constructs a MemeNet model.
+    Constructs a BearingNet model.
     """
     assert not pretrained
-    return MemeNet(**kwargs)
+    return BearingNet(**kwargs)
 
 """
 Network description
 """
 models = [
     {
-        'name': 'memenet',
+        'name': 'bearingnet',
         'min_input': 1,
         'dim': 2,
     }
