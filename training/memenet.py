@@ -22,7 +22,7 @@ class MemeNet(nn.Module):
     """
     7-Layer CNN - Lightweight image classification
     """
-    def __init__(self, num_classes=0, dimensions=(32, 32), num_channels=1, bias=False, **kwargs):
+    def __init__(self, num_classes=0, dimensions=(16, 16), num_channels=1, bias=False, **kwargs):
         super().__init__()
 
         # assert dimensions[0] == dimensions[1]  # Only square supported
@@ -47,8 +47,8 @@ class MemeNet(nn.Module):
         #dim=8*8*16
 
 
-        self.fc1 = ai8x.FusedLinearReLU(dim_x*dim_y*16, 100, bias=bias, **kwargs)
-        self.z = ai8x.FusedLinearReLU(100, dim_x*dim_y*16, bias=bias, **kwargs)
+        self.fc1 = ai8x.FusedLinearReLU(dim_x*dim_y*16, 5, bias=bias, **kwargs)
+        self.z = ai8x.FusedLinearReLU(5, dim_x*dim_y*16, bias=bias, **kwargs)
         
         '''
         ConvTranspose2d:
@@ -71,12 +71,12 @@ class MemeNet(nn.Module):
         #dim=32*32*4
         
         self.conv4 = ai8x.Conv2d(in_channels = 4, out_channels = num_channels, kernel_size = 3,
-                                          padding=1, bias=bias, wide=False, **kwargs)
+                                          padding=1, bias=bias, wide=True, **kwargs)
         
         
         #dim=32x32xnum_channels
-        assert dim_x == 32
-        assert dim_y == 32
+        assert dim_x == 16
+        assert dim_y == 16
         assert bias == False
         
         for m in self.modules():
@@ -104,7 +104,7 @@ class MemeNet(nn.Module):
         x = self.z(x)
         
         #unflatten
-        x = x.view(x.size(0), 16, 8, 8)
+        x = x.view(x.size(0), 16, 4, 4)
         x = self.deconv1(x)
         x = self.deconv2(x)
         x = self.conv4(x)

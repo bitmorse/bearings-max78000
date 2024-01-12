@@ -12,6 +12,12 @@ export LOSS="--regression"
 #export SOFTMAX="--softmax"
 #export STREAMING="--fifo"
 #export MLATOR="--mlator" #needed when using 4 bit? do not use if weight_bits: 8?
+#export COMPACT="--compact-data" #undocumented flag, not sure what it does
+export COMPACT="--no-compact-data"
+#    mgroup.add_argument('--compact-data', action='store_true', default=True,
+     #                   help="use memcpy() to load input data in order to save code space "
+      #                       "(default)")
+    #mgroup.add_argument('--no-compact-data', action='store_false', dest='compact_data',
 
 #make sure pip install pillow==9.0.1 is installed for Tensorboard
 
@@ -107,7 +113,7 @@ rm -rf synthed_net
 conda run --live-stream -n ai8x-synthesis \
 python ai8xize.py --test-dir synthed_net $STREAMING $MLATOR --prefix $MODEL --checkpoint-file \
 trained/qat_best-q.pth.tar --config-file networks/$MODEL.yaml \
---sample-input tests/sample_$DATASET.npy $SOFTMAX --device MAX78000 --compact-data \
+--sample-input tests/sample_$DATASET.npy $SOFTMAX --device MAX78000 $COMPACT \
 --mexpress --timer 0 --display-checkpoint --verbose --overwrite "$@"
 
 GEN_SUCCESS=$?

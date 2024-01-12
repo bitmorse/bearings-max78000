@@ -67,7 +67,7 @@ def memes_get_datasets(data, load_train=False, load_test=False):
             transforms.GaussianBlur(kernel_size=5),
             #transforms.RandomGrayscale(p=0.2),
             #transforms.RandomCrop(size=50),
-            transforms.Resize((32,32)),#was 64
+            transforms.Resize((16,16)),#was 64
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.5], std=[0.5]),
             ai8x.normalize(args=args)
@@ -84,7 +84,7 @@ def memes_get_datasets(data, load_train=False, load_test=False):
             transforms.Grayscale(num_output_channels=1),
             # 960 and 720 are not random, but dimension of input test img
             #transforms.CenterCrop((960,720)),
-            transforms.Resize((32,32)),#was 64
+            transforms.Resize((16,16)),#was 64
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.5], std=[0.5]),
             ai8x.normalize(args=args)
@@ -106,8 +106,8 @@ Dataset description
 datasets = [
     {
         'name': 'memes',
-        'input': (1, 32, 32),
-        'output': (1, 32, 32),
+        'input': (1, 16, 16),
+        'output': (1, 16, 16),
         'loader': memes_get_datasets,
     }
 ]
