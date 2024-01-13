@@ -8,6 +8,9 @@ export REPONAME=bearings-max78000
 echo "BASH: Linking qat_policy_$MODEL.yaml to ai8x-training/policies/qat_policy_$MODEL.yaml..."
 ln -sf ../../$REPONAME/training/qat_policy_$MODEL.yaml ../ai8x-training/policies/qat_policy_$MODEL.yaml
 
+echo "BASH: Linking schedule_$MODEL.yaml to ai8x-training/policies/schedule_$MODEL.yaml..."
+ln -sf ../../$REPONAME/training/schedule_$MODEL.yaml ../ai8x-training/policies/schedule_$MODEL.yaml
+
 echo "BASH: Linking $MODEL.py to ai8x-training/models/$MODEL.py..."
 ln -sf ../../$REPONAME/training/$MODEL.py ../ai8x-training/models/$MODEL.py
 

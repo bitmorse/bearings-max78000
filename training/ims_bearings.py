@@ -28,7 +28,7 @@ Custom image dataset class
 """
 class IMSBearingsDataset(Dataset):
 
-    def __init__(self, data_dir=None, transform=None, filename="ims_bearings_train_exp1_b3_spectrograms"):
+    def __init__(self, data_dir=None, full=False, transform=None, filename="ims_bearings_train_exp1_b3_spectrograms"):
         self.data_dir = data_dir
         self.transform = transform
         self.filename = filename
@@ -38,13 +38,16 @@ class IMSBearingsDataset(Dataset):
         #ra = torch.randperm(self.samples.shape[0])
         #self.samples = self.samples[ra]
         
-        self.samples_len = self.samples.shape[0]
+        #self.samples_len = self.samples.shape[0]
+        if full:
+            self.samples_len = self.samples.shape[0]
+        else:
+            self.samples_len = self.samples.shape[0]//5 #artificial limit by me!
         
     def __len__(self):
         return self.samples_len
 
     def __getitem__(self, idx):
-
         spectrogram = self.samples[idx]
         label = spectrogram
         
@@ -57,7 +60,7 @@ class IMSBearingsDataset(Dataset):
 """
 Dataloader function
 """
-def ims_bearings_get_datasets(data, load_train=False, load_test=False):
+def ims_bearings_get_datasets(data, load_train=False, load_test=False, full=False):
    
     (data_dir, args) = data
     # data_dir = data
@@ -69,7 +72,7 @@ def ims_bearings_get_datasets(data, load_train=False, load_test=False):
             ai8x.normalize(args=args)
         ])
 
-        train_dataset = IMSBearingsDataset(data_dir=os.path.join(data_dir, "ims_bearings", "train"), transform=train_transform, filename="ims_bearings_train_exp1_b3_spectrograms.pt")
+        train_dataset = IMSBearingsDataset(data_dir=os.path.join(data_dir, "ims_bearings", "train"), transform=train_transform, filename="ims_bearings_train_exp1_b3_spectrograms.pt", full=full)
     else:
         train_dataset = None
 
@@ -80,7 +83,7 @@ def ims_bearings_get_datasets(data, load_train=False, load_test=False):
             ai8x.normalize(args=args)
         ])
 
-        test_dataset = IMSBearingsDataset(data_dir=os.path.join(data_dir, "ims_bearings", "test"), transform=test_transform, filename="ims_bearings_test_exp1_b3_spectrograms.pt")
+        test_dataset = IMSBearingsDataset(data_dir=os.path.join(data_dir, "ims_bearings", "test"), transform=test_transform, filename="ims_bearings_test_exp1_b3_spectrograms.pt", full=full)
 
     else:
         test_dataset = None
