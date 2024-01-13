@@ -33,7 +33,7 @@ class BearingNet(nn.Module):
 
         self.conv1 = ai8x.FusedConv2dReLU(in_channels = num_channels, out_channels = 64, kernel_size = 3,
                                           padding=1, bias=bias, **kwargs)
-        #dim=64*64*32
+        #dim=64*64*64
         
         
         self.conv2 = ai8x.FusedMaxPoolConv2dReLU(in_channels = 64, out_channels = 32, kernel_size = 3,
