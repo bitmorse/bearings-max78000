@@ -1,8 +1,7 @@
 ###################################################################################################
-# MemeNet dataloader
-# Marco Giordano
-# Center for Project Based Learning
-# 2022 - ETH Zurich
+# BearingNet dataloader
+# Sam Sulaimanov
+# 2023
 ###################################################################################################
 """
 MemeNet dataset

@@ -1,10 +1,10 @@
 #!/usr/bin/bash
 
 #setup vars for hyperparams
-export LR=0.001
+export LR=0.005
 export OPTIMIZER=adam
-export EPOCHS=12
-export BATCH_SIZE=8
+export EPOCHS=100
+export BATCH_SIZE=4
 
 export MODEL=bearingnet
 export DATASET=ims_bearings

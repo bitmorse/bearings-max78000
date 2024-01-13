@@ -55,8 +55,8 @@ class BearingNet(nn.Module):
         #dim=8*8*16
 
 
-        self.fc1 = ai8x.FusedLinearReLU(dim_x*dim_y*16, 5, bias=bias, **kwargs)
-        self.z = ai8x.FusedLinearReLU(5, dim_x*dim_y*16, bias=bias, **kwargs)
+        self.fc1 = ai8x.FusedLinearReLU(dim_x*dim_y*16, 2, bias=bias, **kwargs)
+        self.z = ai8x.FusedLinearReLU(2, dim_x*dim_y*16, bias=bias, **kwargs)
         
         '''
         ConvTranspose2d:

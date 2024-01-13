@@ -1,10 +1,10 @@
-arch: memenet
-dataset: memes
+arch: bearingnet
+dataset: ims_bearings
 
 # Define layer parameters in order of the layer sequence
 layers:
   # Layer 0: Conv2d with ReLU, 1 input channels, 4 output channels 
-  #dim: 16*16*1 --> 16*16*4
+  #dim: 64*64*1 --> 64*64*4
   - pad: 1
     activate: ReLU
     out_offset: 0x4000
@@ -15,39 +15,51 @@ layers:
     data_format: HWC
     quantization: 8
 
-  # Layer 1: MaxPool and Conv2d with ReLU, 4 input channels, 8 output channels 
-  #dim: 16*16*4 --> 8*8*8
+  # Layer 1: MaxPool and Conv2d with ReLU
+  #dim:  64*64*4 --> 32*32*4 
   - max_pool: 2
     pool_stride: 2
     pad: 1
     activate: ReLU
     out_offset: 0x0000
-    processors: 0x000000000000000f  # 4 processors for 4 input channels
-    output_processors: 0x0000000000000ff0
+    processors: 0x000000000000000f
+    output_processors: 0x00000000000000f0
     op: conv2d
     kernel_size: 3x3
     quantization: 8
 
-  # Layer 2: MaxPool and Conv2d with ReLU, 8 input channels, 16 output channels
-  #dim: 8*8*8 --> 4*4*16
+  # Layer 2: MaxPool and Conv2d with ReLU
+  #dim:   32*32*4 --> 16*16*8 
   - max_pool: 2
     pool_stride: 2
     pad: 1
     activate: ReLU
     out_offset: 0x4000
-    processors: 0x0000000000000ff0  # 8 processors for 8 input channels
-    output_processors: 0x00000000ffff0000
+    processors: 0x00000000000000f0  
+    output_processors: 0x0000000000ff0000
     op: conv2d
     kernel_size: 3x3
     quantization: 8
 
-  # Layer 3: Linear with ReLU (Flattening 2D to 1D), 16 input channels
-  #dim: 4*4*16 --> 5
+  # Layer 3: MaxPool and Conv2d with ReLU
+  #dim: 16*16*8  --> 8*8*16
+  - max_pool: 2
+    pool_stride: 2
+    pad: 1
+    activate: ReLU
+    out_offset: 0x0000
+    processors: 0x0000000000ff0000 
+    output_processors: 0x0000ffff00000000
+    op: conv2d
+    kernel_size: 3x3
+    quantization: 8
 
+  # Layer 4: Linear with ReLU (Flattening 2D to 1D)
+  #dim: 8*8*16 --> 2
   - op: mlp
     activate: ReLU
     flatten: true #Used in Linear layers to specify that 2D input data should be transformed to 1D data | True, False (default)                
-    out_offset: 0x0000
-    processors: 0x00000000ffff0000  # 16 processors for 16 input channels
+    out_offset: 0x4000
+    processors: 0x0000ffff00000000  # 16 processors for 16 input channels
     quantization: 8
     output: true
