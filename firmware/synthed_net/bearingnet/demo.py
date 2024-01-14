@@ -91,6 +91,7 @@ if port is None:
 ser = serial.Serial(port, BAUD_RATE, timeout=1)
 chunks_written = 0
 chunks_wrong = 0
+j = 0
 
 IDLE_STATE = 0
 READING_CHUNKS_STATE = 1
@@ -170,11 +171,12 @@ try:
             current_state = IDLE_STATE
         
         elif current_state == IDLE_STATE:
-            if False:
+            if j < 1:
                 print("Changing state to WRITING_CHUNK_STATE")
                 hex_lines = user_input.copy() # set a new input
                 current_state = WRITING_CHUNK_STATE
                 start_time = time.time()
+                j += 1
             
 
 finally:

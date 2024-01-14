@@ -146,13 +146,17 @@ void get_user_input(uint8_t is_known_answer_test)
     cnn_unload((uint32_t *) cnn_output); //output should be 0x00007f7d
     cnn_disable(); // Shut down CNN clock, disable peripheral
 
-    uint8_t z1 = (uint8_t)cnn_output[0]; //is 0x7d
-    uint8_t z2 = (uint8_t)(cnn_output[0] >> 8); //is 0x7f
+
+    //is 0x7d for known answer test, first 8 bits of cnn_output
+    uint8_t z1 = (uint8_t)(cnn_output[0] & 0x000000ff);
+
+    //is 0x7f for known answer test
+    uint8_t z2 = (uint8_t)((cnn_output[0] & 0x0000ff00) >> 8);
 
     if (is_known_answer_test){
-        printf("Output: Comparing known input with serial input gave %d errors. CNN result: [%x, %x] \n", mismatch_count, z1, z2);
+        printf("Output: Comparing known input with serial input gave %d errors. CNN result: [%x, %x, %x] \n", mismatch_count, z1, z2, cnn_output);
     }else{
-        printf("Output: %x, %x\n", mismatch_count, z1, z2);
+        printf("Output: %x, %x, %x\n", z1, z2, cnn_output);
     }
 
 
@@ -203,6 +207,11 @@ void demo_test_cnn(void)
 
     if (check_output() != CNN_OK) fail();
     cnn_unload((uint32_t *) cnn_output);
+
+    //clear output array
+    for(int i = 0; i < (CNN_NUM_OUTPUTS + 3) / 4; i++){
+        cnn_output[i] = 0;
+    }
 
     printf("*** PASS ***");
 
