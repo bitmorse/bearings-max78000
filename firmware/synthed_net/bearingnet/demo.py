@@ -96,6 +96,7 @@ IDLE_STATE = 0
 READING_CHUNKS_STATE = 1
 WRITING_CHUNK_STATE = 2
 VERIFY_CHUNK_STATE = 3
+PROCESS_OUTPUT_STATE = 4
     
 def reset(ser):
     ser.close()
@@ -129,7 +130,7 @@ try:
             hex_lines.append(line)
             if len(hex_lines) >= CHUNKS_LEN:
                 print("Read {} lines".format(len(hex_lines)))
-                print("Changing state to IDLE_STATE")
+                print("Changing state to WRITING_CHUNK_STATE")
                 current_state = WRITING_CHUNK_STATE
                 start_time = time.time()
         
@@ -139,8 +140,8 @@ try:
         
         elif current_state == WRITING_CHUNK_STATE and "chunk(" in line:
             chunk = hex_lines.pop(0).strip()
-            #print("RX1: {}".format(line))
-            #print("TX: {}".format(chunk))
+            print("RX1: {}".format(line))
+            print("TX: {}".format(chunk))
             
             #send a chunk
             b = ("%s\r"%chunk)
@@ -160,15 +161,20 @@ try:
                 print("All chunks written with {} wrong chunks".format(chunks_wrong))
                 print("Changing state to IDLE_STATE")
                 chunks_written = 0
-                current_state = IDLE_STATE
+                current_state = PROCESS_OUTPUT_STATE
             else:
                 current_state = WRITING_CHUNK_STATE
         
+        elif current_state == PROCESS_OUTPUT_STATE and "Output: " in line:
+            print("From device: {}".format(line))
+            current_state = IDLE_STATE
+        
         elif current_state == IDLE_STATE:
-            print("Changing state to WRITING_CHUNK_STATE")
-            hex_lines = user_input.copy() # set a new input
-            current_state = WRITING_CHUNK_STATE
-            start_time = time.time()
+            if False:
+                print("Changing state to WRITING_CHUNK_STATE")
+                hex_lines = user_input.copy() # set a new input
+                current_state = WRITING_CHUNK_STATE
+                start_time = time.time()
             
 
 finally:

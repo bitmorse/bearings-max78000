@@ -21,8 +21,9 @@ static const uint32_t sample_output[] = SAMPLE_OUTPUT;
 // HWC 64x64, channels 0 to 0
 static const uint32_t input_0[] = SAMPLE_INPUT_0;
 
-static int32_t ml_data32[(CNN_NUM_OUTPUTS + 3) / 4]; // CNN output data
+static int32_t  cnn_output[(CNN_NUM_OUTPUTS + 3) / 4]; // CNN output data
 
+uint32_t input_serial[DEMO_INPUT_LEN]; //the input from the serial port by the user
 
 void fail(void)
 {
@@ -30,11 +31,11 @@ void fail(void)
   while (1);
 }
 
-void load_input(void)
+void load_input(uint32_t *user_input)
 {
   // This function loads the sample data input -- replace with actual data
 
-  memcpy32((uint32_t *) 0x50400000, input_0, 4096);
+  memcpy32((uint32_t *) 0x50400000, user_input, 4096);
 }
 
 int check_output(void)
@@ -58,6 +59,19 @@ int check_output(void)
   return CNN_OK;
 }
 
+void cnn_inference(uint32_t * input)
+{
+    cnn_init(); // Bring state machine into consistent state
+    cnn_load_weights(); // Load kernels
+    cnn_load_bias(); // Not used in this network
+    cnn_configure(); // Configure state machine
+    load_input(input); // Load data input
+    cnn_start(); // Start CNN processing
+
+    while (cnn_time == 0)
+    MXC_LP_EnterSleepMode(); // Wait for CNN
+}
+
 void print_sampleinput(void){
     printf("*** The sample input is: **** \n");
     //in chunks of 64
@@ -70,16 +84,17 @@ void print_sampleinput(void){
 }
 
 
-void get_user_input(void)
+void get_user_input(uint8_t is_known_answer_test)
 {
     fflush(stdin);
     fflush(stdout);
 
     //read in user input line by line from serial port
-    char input[DEMO_INPUT_LEN];
+    char input[DEMO_INPUT_LEN*2];//DEMO_INPUT_LEN*2 because each char is 2 hex digits
 
     int expected_chunks = DEMO_INPUT_CHUNK_LEN;
     int i = 0;
+    int total_input_i = 0;
     int chunk = 0;
 
     while (chunk < expected_chunks){
@@ -94,9 +109,10 @@ void get_user_input(void)
                 //input[i] = '\0'; dont use the string terminator
                 break;
             }
-            if (c != '\n'){
-                input[i] = c;
+            if (c != '\n' && c != '\r'){
+                input[total_input_i] = c;
                 i++;
+                total_input_i++;
             }
         }
         chunk++;
@@ -107,39 +123,52 @@ void get_user_input(void)
     }
 
     printf("\n"); //do not remove this! it is needed to flush the serial buffer
-
+    
     //convert chars to uint8_t
-    int8_t input_int8[DEMO_INPUT_LEN];
     int mismatch_count = 0;
-    for(int j = 0; j < i; j+=2){
+    for(int j = 0; j < total_input_i; j+=2){
         char temp[2];
-        int8_t converted = 0;
+        uint8_t converted = 0; //important that his doesnt have type char. if it does, the matchings will be wrong
         temp[0] = input[j];
         temp[1] = input[j+1];
         converted = strtol(temp, NULL, 16);
+        input_serial[j/2] = converted;
 
-        input_int8[j] = converted;
-
-        //compare with input_0[i]
-        if(converted != input_0[j/2]){
+        //compare with input_0[i] if this is a known answer test
+        if(is_known_answer_test && (input_serial[j/2] != input_0[j/2])){
             mismatch_count += 1;
         }
-        //printf("the input: %0.2x, the expected: %0.2x", converted, input_0[j/2]);
-        //printf("the hex: %0.2x, the int: %i", converted, converted);
     }
 
-    printf("Comparing known input with serial input gave %d errors.\n", mismatch_count);
+
+    cnn_enable(MXC_S_GCR_PCLKDIV_CNNCLKSEL_PCLK, MXC_S_GCR_PCLKDIV_CNNCLKDIV_DIV1);
+    cnn_inference((uint32_t *)input_serial);
+    cnn_unload((uint32_t *) cnn_output); //output should be 0x00007f7d
+    cnn_disable(); // Shut down CNN clock, disable peripheral
+
+    uint8_t z1 = (uint8_t)cnn_output[0]; //is 0x7d
+    uint8_t z2 = (uint8_t)(cnn_output[0] >> 8); //is 0x7f
+
+    if (is_known_answer_test){
+        printf("Output: Comparing known input with serial input gave %d errors. CNN result: [%x, %x] \n", mismatch_count, z1, z2);
+    }else{
+        printf("Output: %x, %x\n", mismatch_count, z1, z2);
+    }
+
 
     //clear the input array
-    for(int j = 0; j < 2048; j++){
+    for(int j = 0; j < DEMO_INPUT_LEN*2; j++){
         input[j] = '\0';
     }
 }
 
+
 void demo_main(void)
 {
+    uint8_t is_known_answer_test = 1;
     while(1){
-        get_user_input();
+        get_user_input(is_known_answer_test);
+        is_known_answer_test = 0;
     }
 }
 
@@ -166,24 +195,14 @@ void demo_test_cnn(void)
         printf("*** DEMO ENABLED ***");
         print_sampleinput();
     }
+    printf("*** CNN Inference Test bearingnet ***");
     // Enable peripheral, enable CNN interrupt, turn on CNN clock
     // CNN clock: APB (50 MHz) div 1
     cnn_enable(MXC_S_GCR_PCLKDIV_CNNCLKSEL_PCLK, MXC_S_GCR_PCLKDIV_CNNCLKDIV_DIV1);
-
-    printf("*** CNN Inference Test bearingnet ***");
-
-    cnn_init(); // Bring state machine into consistent state
-    cnn_load_weights(); // Load kernels
-    cnn_load_bias(); // Not used in this network
-    cnn_configure(); // Configure state machine
-    load_input(); // Load data input
-    cnn_start(); // Start CNN processing
-
-    while (cnn_time == 0)
-    MXC_LP_EnterSleepMode(); // Wait for CNN
+    cnn_inference((uint32_t *) input_0);
 
     if (check_output() != CNN_OK) fail();
-    cnn_unload((uint32_t *) ml_data32);
+    cnn_unload((uint32_t *) cnn_output);
 
     printf("*** PASS ***");
 
