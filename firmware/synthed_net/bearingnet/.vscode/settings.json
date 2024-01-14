@@ -68,6 +68,17 @@
     ],
     "C_Cpp.default.defines": [
         "${config:board}"
-    ]
+    ],
+    "files.associations": {
+        "cnn.h": "c",
+        "demo.h": "c",
+        "string.h": "c",
+        "stdlib.h": "c",
+        "stdio.h": "c",
+        "mxc.h": "c",
+        "mxc_device.h": "c",
+        "mxc_sys.h": "c",
+        "board.h": "c"
+    }
 }
 

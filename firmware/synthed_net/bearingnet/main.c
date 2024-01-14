@@ -40,54 +40,8 @@
 #include <string.h>
 #include <stdio.h>
 #include "mxc.h"
-#include "cnn.h"
-#include "sampledata.h"
-#include "sampleoutput.h"
+#include "demo.h"
 
-volatile uint32_t cnn_time; // Stopwatch
-
-void fail(void)
-{
-  printf("\n*** FAIL ***\n\n");
-  while (1);
-}
-
-// 1-channel 64x64 data input (4096 bytes / 1024 32-bit words):
-// HWC 64x64, channels 0 to 0
-static const uint32_t input_0[] = SAMPLE_INPUT_0;
-
-void load_input(void)
-{
-  // This function loads the sample data input -- replace with actual data
-
-  memcpy32((uint32_t *) 0x50400000, input_0, 4096);
-}
-
-// Expected output of layer 4 for bearingnet given the sample input (known-answer test)
-// Delete this function for production code
-static const uint32_t sample_output[] = SAMPLE_OUTPUT;
-int check_output(void)
-{
-  int i;
-  uint32_t mask, len;
-  volatile uint32_t *addr;
-  const uint32_t *ptr = sample_output;
-
-  while ((addr = (volatile uint32_t *) *ptr++) != 0) {
-    mask = *ptr++;
-    len = *ptr++;
-    for (i = 0; i < len; i++)
-      if ((*addr++ & mask) != *ptr++) {
-        printf("Data mismatch (%d/%d) at address 0x%08x: Expected 0x%08x, read 0x%08x.\n",
-               i + 1, len, addr - 1, *(ptr - 1), *(addr - 1) & mask);
-        return CNN_FAIL;
-      }
-  }
-
-  return CNN_OK;
-}
-
-static int32_t ml_data32[(CNN_NUM_OUTPUTS + 3) / 4];
 
 int main(void)
 {
@@ -95,55 +49,22 @@ int main(void)
 
   // Switch to 100 MHz clock
   MXC_SYS_Clock_Select(MXC_SYS_CLOCK_IPO);
-  SystemCoreClockUpdate();
 
-  printf("Waiting...\n");
+  SystemCoreClockUpdate();
 
   // DO NOT DELETE THIS LINE:
   MXC_Delay(SEC(2)); // Let debugger interrupt if needed
 
-  // Enable peripheral, enable CNN interrupt, turn on CNN clock
-  // CNN clock: APB (50 MHz) div 1
-  cnn_enable(MXC_S_GCR_PCLKDIV_CNNCLKSEL_PCLK, MXC_S_GCR_PCLKDIV_CNNCLKDIV_DIV1);
+  // Type word "demo" to continue
+  printf("Waiting...\r\n");
+  fflush(stdout);
+  while (getchar() != 'd');
+  fflush(stdin);
 
-  printf("\n*** CNN Inference Test bearingnet ***\n");
+  demo_test_cnn();
 
-  cnn_init(); // Bring state machine into consistent state
-  cnn_load_weights(); // Load kernels
-  cnn_load_bias(); // Not used in this network
-  cnn_configure(); // Configure state machine
-  load_input(); // Load data input
-  cnn_start(); // Start CNN processing
-
-  while (cnn_time == 0)
-    MXC_LP_EnterSleepMode(); // Wait for CNN
-
-  if (check_output() != CNN_OK) fail();
-  cnn_unload((uint32_t *) ml_data32);
-
-  printf("\n*** PASS ***\n\n");
-
-#ifdef CNN_INFERENCE_TIMER
-  printf("Approximate inference time: %u us\n\n", cnn_time);
-#endif
-
-  cnn_disable(); // Shut down CNN clock, disable peripheral
-
+  demo_main();
 
   return 0;
 }
-
-/*
-  SUMMARY OF OPS
-  Hardware: 23,124,226 ops (22,525,440 macc; 598,786 comp; 0 add; 0 mul; 0 bitwise)
-    Layer 0: 2,621,440 ops (2,359,296 macc; 262,144 comp; 0 add; 0 mul; 0 bitwise)
-    Layer 1: 19,169,280 ops (18,874,368 macc; 294,912 comp; 0 add; 0 mul; 0 bitwise)
-    Layer 2: 1,216,512 ops (1,179,648 macc; 36,864 comp; 0 add; 0 mul; 0 bitwise)
-    Layer 3: 115,456 ops (110,592 macc; 4,864 comp; 0 add; 0 mul; 0 bitwise)
-    Layer 4: 1,538 ops (1,536 macc; 2 comp; 0 add; 0 mul; 0 bitwise)
-
-  RESOURCE USAGE
-  Weight memory: 26,880 bytes out of 442,368 bytes total (6.1%)
-  Bias memory:   0 bytes out of 2,048 bytes total (0.0%)
-*/
 
