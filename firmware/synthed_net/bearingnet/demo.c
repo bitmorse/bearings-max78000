@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
+#include <math.h>
 
 #include "demo.h"
 #include "mxc.h"
@@ -9,8 +10,14 @@
 #include "sampledata.h"
 #include "sampleoutput.h"
 
+#include "wavelib.h"
+
 #define DEMO_INPUT_LEN 64*64
 #define DEMO_INPUT_CHUNK_LEN 64
+
+#define SAMPLE_LENGTH 200
+
+#define PI 3.14159265358979323846
 
 volatile uint32_t cnn_time; // Stopwatch
 
@@ -166,9 +173,88 @@ void get_user_input(uint8_t is_known_answer_test)
     }
 }
 
+void cwt_test(void){
+
+
+
+    //double signal[SAMPLE_LENGTH];
+    //double frequency = 5;
+    //double sampling_rate = SAMPLE_LENGTH; // Assuming 1 second duration
+    //double t;
+
+    // Generate a test signal
+    /*
+    for (int i = 0; i < SAMPLE_LENGTH; i++) {
+        t = (double)i / sampling_rate;
+        signal[i] = sin(2 * PI * frequency * t);
+    }
+    */
+
+   
+
+    // Parameters for CWT
+    const char* wave = "morl"; // Morlet wavelet
+    float param = 5;         // Morlet parameter
+    int N = SAMPLE_LENGTH;              // Length of your signal
+    float dt = 1;          // Sampling rate (1 for example)
+    int J = 10;                // Total number of scales
+
+    // Initialize the CWT object
+    cwt_object obj = cwt_init(wave, param, N, dt, J);
+
+    printf("J: %d\n", obj->J);
+
+    // Perform the Continuous Wavelet Transform
+    cwt(obj, normal_signal); 
+
+    printf("done");
+
+    // Accessing the output from the CWT
+    cplx_data *cwt_output = obj->output; // Access the complex output data
+    double *scales = obj->scale;         // Access the scales
+    double *periods = obj->period;       // Access the periods
+    double *coi = obj->coi;              // Access the cone of influence
+
+
+
+    printf("signal: \n");
+    for(int i = 0; i < SAMPLE_LENGTH; i++){
+        printf("%f ", normal_signal[i]);
+    }
+
+        // Computing and printing the magnitude of the CWT output and the scales
+    printf("CWT Output Magnitude:\n");
+    for (int j = 0; j < obj->J; j++) {  // Iterate over scales
+        //printf("Scale %d: ", j);
+        for (int i = 0; i < N; i++) {  // Iterate over signal length
+            int index = j * N + i;  // Assuming output is a 1D array of size J * N
+            double magnitude = sqrt(obj->output[index].re * obj->output[index].re +
+                                    obj->output[index].im * obj->output[index].im);
+
+            //PRINT DOUBLES
+            printf("%lf ", magnitude);
+        }
+        //printf("\n");
+    }
+    printf("\n");
+
+    printf("\nScales:\n");
+    for (int j = 0; j < obj->J; j++) {
+        printf("%f, ", obj->scale[j]);
+    }
+
+
+    // Now signal[] contains the test signal similar to the generated one
+    // ... (rest of your code)
+    
+
+
+}
 
 void demo_main(void)
 {
+    cwt_test();
+
     uint8_t is_known_answer_test = 1;
     while(1){
         get_user_input(is_known_answer_test);

@@ -78,7 +78,10 @@
         "mxc.h": "c",
         "mxc_device.h": "c",
         "mxc_sys.h": "c",
-        "board.h": "c"
+        "board.h": "c",
+        "math.h": "c",
+        "sampleoutput.h": "c",
+        "sampledata.h": "c"
     }
 }
 
