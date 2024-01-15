@@ -16,6 +16,8 @@
 #define DEMO_INPUT_CHUNK_LEN 64
 
 #define SAMPLE_LENGTH 200
+#define SCALES 12
+#define MORLET 5
 
 #define PI 3.14159265358979323846
 
@@ -194,36 +196,28 @@ void cwt_test(void){
 
     // Parameters for CWT
     const char* wave = "morl"; // Morlet wavelet
-    float param = 5;         // Morlet parameter
+    float param = MORLET;         // Morlet parameter
     int N = SAMPLE_LENGTH;              // Length of your signal
     float dt = 1;          // Sampling rate (1 for example)
-    int J = 10;                // Total number of scales
+    int J = SCALES;                // Total number of scales
 
     // Initialize the CWT object
     cwt_object obj = cwt_init(wave, param, N, dt, J);
 
-    printf("J: %d\n", obj->J);
+    printf("J: %i\n", obj->J);
+    printf("dj: %f\n", obj->dj);
+    printf("scale type: %s\n", obj->type);
 
     // Perform the Continuous Wavelet Transform
-    cwt(obj, normal_signal); 
+    cwt(obj, mean_normal_signal); 
 
-    printf("done");
-
-    // Accessing the output from the CWT
-    cplx_data *cwt_output = obj->output; // Access the complex output data
-    double *scales = obj->scale;         // Access the scales
-    double *periods = obj->period;       // Access the periods
-    double *coi = obj->coi;              // Access the cone of influence
-
-
-
-    printf("signal: \n");
-    for(int i = 0; i < SAMPLE_LENGTH; i++){
-        printf("%f ", normal_signal[i]);
-    }
+    //printf("signal: \n");
+    //for(int i = 0; i < SAMPLE_LENGTH; i++){
+    //    printf("%f ", signal[i]);
+    //}
 
         // Computing and printing the magnitude of the CWT output and the scales
-    printf("CWT Output Magnitude:\n");
+    printf("CWT Output NORMAL Magnitude:\n");
     for (int j = 0; j < obj->J; j++) {  // Iterate over scales
         //printf("Scale %d: ", j);
         for (int i = 0; i < N; i++) {  // Iterate over signal length
@@ -238,6 +232,25 @@ void cwt_test(void){
     }
     printf("\n");
 
+    // Perform the Continuous Wavelet Transform
+    cwt(obj, mean_fault_signal); 
+
+    printf("CWT Output FAULT Magnitude:\n");
+    for (int j = 0; j < obj->J; j++) {  // Iterate over scales
+        //printf("Scale %d: ", j);
+        for (int i = 0; i < N; i++) {  // Iterate over signal length
+            int index = j * N + i;  // Assuming output is a 1D array of size J * N
+            double magnitude = sqrt(obj->output[index].re * obj->output[index].re +
+                                    obj->output[index].im * obj->output[index].im);
+
+            //PRINT DOUBLES
+            printf("%lf ", magnitude);
+        }
+        //printf("\n");
+    }
+    printf("\n");
+
+    double *scales = obj->scale;         // Access the scales
     printf("\nScales:\n");
     for (int j = 0; j < obj->J; j++) {
         printf("%f, ", obj->scale[j]);
