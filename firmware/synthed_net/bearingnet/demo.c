@@ -15,7 +15,9 @@
 #define DEMO_INPUT_LEN 64*64
 #define DEMO_INPUT_CHUNK_LEN 64
 
-#define SAMPLE_LENGTH 200
+#define INTERPOLATION_W 48
+#define INTERPOLATION_H 48
+#define SAMPLE_LENGTH 192
 #define SCALES 12
 #define MORLET 5
 
@@ -175,6 +177,38 @@ void get_user_input(uint8_t is_known_answer_test)
     }
 }
 
+//input_image (J rows, N columns) 
+void call_bilinear_interpolate(double *input_image, double *input_image_interpolated, int N, int J, int new_width, int new_height) {
+    for (int i = 0; i < new_width; i++) {
+        for (int j = 0; j < new_height; j++) {
+            // Adjusted calculations to ensure coordinates are within bounds
+            double x = (i / (double)(new_width - 1)) * (N - 1);
+            double y = (j / (double)(new_height - 1)) * (J - 1);
+
+            int x1 = (int) x;
+            int y1 = (int) y;
+            int x2 = fmin(x1 + 1, N);
+            int y2 = fmin(y1 + 1, J);
+
+            double wa = (x2 - x) * (y2 - y);
+            double wb = (x - x1) * (y2 - y);
+            double wc = (x2 - x) * (y - y1);
+            double wd = (x - x1) * (y - y1);
+
+            int index = i * new_height + j;
+            int input_index1 = x1 * J + y1;
+            int input_index2 = x2 * J + y1;
+            int input_index3 = x1 * J + y2;
+            int input_index4 = x2 * J + y2;
+
+            input_image_interpolated[index] = wa * input_image[input_index1] +
+                                              wb * input_image[input_index2] +
+                                              wc * input_image[input_index3] +
+                                              wd * input_image[input_index4];
+        }
+    }
+}
+
 void cwt_test(void){
 
 
@@ -192,14 +226,14 @@ void cwt_test(void){
     }
     */
 
-   
-
     // Parameters for CWT
     const char* wave = "morl"; // Morlet wavelet
     float param = MORLET;         // Morlet parameter
     int N = SAMPLE_LENGTH;              // Length of your signal
     float dt = 1;          // Sampling rate (1 for example)
     int J = SCALES;                // Total number of scales
+
+
 
     // Initialize the CWT object
     cwt_object obj = cwt_init(wave, param, N, dt, J);
@@ -218,37 +252,73 @@ void cwt_test(void){
 
         // Computing and printing the magnitude of the CWT output and the scales
     printf("CWT Output NORMAL Magnitude:\n");
+    double * magnitude_array = (double *) malloc(SAMPLE_LENGTH*SCALES* sizeof(double));
+    double * magnitude_array_interpolated = (double *) malloc(INTERPOLATION_W*INTERPOLATION_H* sizeof(double));
+
+
     for (int j = 0; j < obj->J; j++) {  // Iterate over scales
         //printf("Scale %d: ", j);
         for (int i = 0; i < N; i++) {  // Iterate over signal length
             int index = j * N + i;  // Assuming output is a 1D array of size J * N
-            double magnitude = sqrt(obj->output[index].re * obj->output[index].re +
+            magnitude_array[index] = sqrt(obj->output[index].re * obj->output[index].re +
                                     obj->output[index].im * obj->output[index].im);
 
             //PRINT DOUBLES
-            printf("%lf ", magnitude);
+            printf("%lf ",  magnitude_array[index]);
         }
         //printf("\n");
     }
     printf("\n");
 
+    call_bilinear_interpolate(magnitude_array, magnitude_array_interpolated, N, J, INTERPOLATION_W, INTERPOLATION_H);
+
+    printf("CWT Output NORMAL Interpolation:\n");
+    for (int i = 0; i < INTERPOLATION_W*INTERPOLATION_H; i++) {  // Iterate over scales
+        printf("%lf ",  magnitude_array_interpolated[i]);
+    }
+
+
+    free(magnitude_array);
+    free(magnitude_array_interpolated);
+
+
+
+    /* ####### FAULT SIGNAL  ################*/
     // Perform the Continuous Wavelet Transform
     cwt(obj, mean_fault_signal); 
+
+    magnitude_array = (double *) malloc(SAMPLE_LENGTH*SCALES* sizeof(double));
+    magnitude_array_interpolated = (double *) malloc(INTERPOLATION_W*INTERPOLATION_H* sizeof(double));
 
     printf("CWT Output FAULT Magnitude:\n");
     for (int j = 0; j < obj->J; j++) {  // Iterate over scales
         //printf("Scale %d: ", j);
         for (int i = 0; i < N; i++) {  // Iterate over signal length
             int index = j * N + i;  // Assuming output is a 1D array of size J * N
-            double magnitude = sqrt(obj->output[index].re * obj->output[index].re +
+            magnitude_array[index] = sqrt(obj->output[index].re * obj->output[index].re +
                                     obj->output[index].im * obj->output[index].im);
 
             //PRINT DOUBLES
-            printf("%lf ", magnitude);
+            printf("%lf ",  magnitude_array[index]);
+
         }
         //printf("\n");
     }
     printf("\n");
+
+
+    call_bilinear_interpolate(magnitude_array, magnitude_array_interpolated, N, J, INTERPOLATION_W, INTERPOLATION_H);
+
+    printf("CWT Output FAULT Interpolation:\n");
+
+    for (int i = 0; i < INTERPOLATION_W*INTERPOLATION_H; i++) { 
+        printf("%lf ",  magnitude_array_interpolated[i]);
+    }
+
+    free(magnitude_array);
+    free(magnitude_array_interpolated);
+
+
 
     double *scales = obj->scale;         // Access the scales
     printf("\nScales:\n");

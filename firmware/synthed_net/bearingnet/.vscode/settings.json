@@ -81,7 +81,8 @@
         "board.h": "c",
         "math.h": "c",
         "sampleoutput.h": "c",
-        "sampledata.h": "c"
+        "sampledata.h": "c",
+        "max78000.h": "c"
     }
 }
 
