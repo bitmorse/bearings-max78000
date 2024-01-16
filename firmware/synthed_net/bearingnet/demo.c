@@ -45,6 +45,20 @@ static int32_t  cnn_output[(CNN_NUM_OUTPUTS + 3) / 4]; // CNN output data
 
 uint32_t input_serial[DEMO_INPUT_LEN]; //the input from the serial port by the user
 
+// Parameters for CWT
+const char* wave = "morl"; // Morlet wavelet
+float param = MORLET;         // Morlet parameter
+int N = SAMPLE_LEN;              // Length of your signal
+float dt = DT;          // Sampling rate (1 for example)
+int J = SCALES;                // Total number of scales
+
+float s0 = S0;
+float dj = DJ;
+float power = POW;
+char * type = "pow";
+float reference = REFERENCE;
+cwt_object cwt_out;
+
 void fail(void)
 {
   printf("*** FAIL ***");
@@ -186,67 +200,12 @@ void get_user_input(uint8_t is_known_answer_test)
     }
 }
 
-//input_image (J rows, N columns) 
-void call_bilinear_interpolate(double *input_image, double *input_image_interpolated, int N, int J, int new_width, int new_height) {
-    for (int i = 0; i < new_width; i++) {
-        for (int j = 0; j < new_height; j++) {
-            // Adjusted calculations to ensure coordinates are within bounds
-            double x = (i / (double)(new_width - 1)) * (N - 1);
-            double y = (j / (double)(new_height - 1)) * (J - 1);
-
-            int x1 = (int) x;
-            int y1 = (int) y;
-            int x2 = fmin(x1 + 1, N);
-            int y2 = fmin(y1 + 1, J);
-
-            double wa = (x2 - x) * (y2 - y);
-            double wb = (x - x1) * (y2 - y);
-            double wc = (x2 - x) * (y - y1);
-            double wd = (x - x1) * (y - y1);
-
-            int index = i * new_height + j;
-            int input_index1 = x1 * J + y1;
-            int input_index2 = x2 * J + y1;
-            int input_index3 = x1 * J + y2;
-            int input_index4 = x2 * J + y2;
-
-            input_image_interpolated[index] = wa * input_image[input_index1] +
-                                              wb * input_image[input_index2] +
-                                              wc * input_image[input_index3] +
-                                              wd * input_image[input_index4];
-        }
-    }
-}
 
 void cwt_test(void){
 
-
-    // Parameters for CWT
-    const char* wave = "morl"; // Morlet wavelet
-    float param = MORLET;         // Morlet parameter
-    int N = SAMPLE_LEN;              // Length of your signal
-    float dt = DT;          // Sampling rate (1 for example)
-    int J = SCALES;                // Total number of scales
-
-    float s0 = S0;
-    float dj = DJ;
-    float power = POW;
-    char * type = "pow";
-    float reference = REFERENCE;
-
-    // Initialize the CWT object
-    cwt_object obj = cwt_init(wave, param, N, dt, J);
-    setCWTScales(obj, s0, dj, type, power);
-
-
-    printf("J: %i\n", obj->J);
-    printf("dj: %f\n", obj->dj);
-    printf("dt: %f\n", obj->dt);
-    printf("s0: %f\n", obj->s0);
-    printf("scale type: %s\n", obj->type);
-
-    // Perform the Continuous Wavelet Transform
-    cwt(obj, mean_normal_signal); 
+    cwt_out = cwt_init(wave, param, N, dt, J);
+    setCWTScales(cwt_out, s0, dj, type, power);
+    cwt(cwt_out, mean_normal_signal); 
 
 
     // Computing and printing the magnitude of the CWT output and the scales
@@ -254,12 +213,12 @@ void cwt_test(void){
     double * magnitude_array = (double *) malloc(SAMPLE_LEN*SCALES* sizeof(double));
 
 
-    for (int j = 0; j < obj->J; j++) {  // Iterate over scales
+    for (int j = 0; j < cwt_out->J; j++) {  // Iterate over scales
         //printf("Scale %d: ", j);
         for (int i = 0; i < N; i++) {  // Iterate over signal length
             int index = j * N + i;  // Assuming output is a 1D array of size J * N
-            magnitude_array[index] = sqrt(obj->output[index].re * obj->output[index].re +
-                                    obj->output[index].im * obj->output[index].im);
+            magnitude_array[index] = sqrt(cwt_out->output[index].re * cwt_out->output[index].re +
+                                    cwt_out->output[index].im * cwt_out->output[index].im);
 
             //PRINT DOUBLES
             printf("%lf ",  magnitude_array[index]);
@@ -274,17 +233,17 @@ void cwt_test(void){
 
     /* ####### FAULT SIGNAL  ################*/
     // Perform the Continuous Wavelet Transform
-    cwt(obj, mean_fault_signal); 
+    cwt(cwt_out, mean_fault_signal); 
 
     magnitude_array = (double *) malloc(SAMPLE_LEN*SCALES* sizeof(double));
 
     printf("CWT Output FAULT Magnitude:\n");
-    for (int j = 0; j < obj->J; j++) {  // Iterate over scales
+    for (int j = 0; j < cwt_out->J; j++) {  // Iterate over scales
         //printf("Scale %d: ", j);
         for (int i = 0; i < N; i++) {  // Iterate over signal length
             int index = j * N + i;  // Assuming output is a 1D array of size J * N
-            magnitude_array[index] = sqrt(obj->output[index].re * obj->output[index].re +
-                                    obj->output[index].im * obj->output[index].im);
+            magnitude_array[index] = sqrt(cwt_out->output[index].re * cwt_out->output[index].re +
+                                    cwt_out->output[index].im * cwt_out->output[index].im);
 
             //PRINT DOUBLES
             printf("%lf ",  magnitude_array[index]);
@@ -299,19 +258,78 @@ void cwt_test(void){
 
 
 
-    double *scales = obj->scale;         // Access the scales
+    double *scales = cwt_out->scale;         // Access the scales
     printf("\nScales:\n");
-    for (int j = 0; j < obj->J; j++) {
-        printf("%f, ", obj->scale[j]);
+    for (int j = 0; j < cwt_out->J; j++) {
+        printf("%f, ", cwt_out->scale[j]);
     }
 
+}
 
 
+
+void process_user_window_input(double *window){
+
+    cwt_out = cwt_init(wave, param, N, dt, J);
+    setCWTScales(cwt_out, s0, dj, type, power);
+    cwt(cwt_out, window);
+
+    fflush(stdin);
+    printf("CWT Normalised: \n");
+    fflush(stdout);
+    
+    for (int j = 0; j < cwt_out->J; j++) {  // Iterate over scales
+        for (int i = 0; i < N; i++) {  // Iterate over signal length
+            int index = j * N + i;  // Assuming output is a 1D array of size J * N
+            double magnitude_normalised = sqrt(cwt_out->output[index].re * cwt_out->output[index].re +
+                                    cwt_out->output[index].im * cwt_out->output[index].im) / REFERENCE;
+
+            //PRINT DOUBLES
+            printf("%lf ", magnitude_normalised);
+
+        }
+    }
+    printf("\n");
+
+}
+
+void read_user_window_input(double *window){
+
+    printf("Enter window: \n");
+
+    fflush(stdin);
+    fflush(stdout);
+
+    for (int i = 0; i < SAMPLE_LEN; i += 1) {
+        if (scanf("%lf", &window[i]) != 1) {
+            // Handle error, e.g., not enough inputs
+            break;
+        }
+    }
+
+    fflush(stdin);
+    printf("Window: \n");
+    fflush(stdout);
+
+    for(int i = 0; i < SAMPLE_LEN; i++){
+        printf("%lf ", window[i]);
+    }
 
 }
 
 void demo_main(void)
-{
+{   
+    // ----------------- DEMO 1: DIRECT INPUT -----------------
+
+    double window[SAMPLE_LEN];
+
+    while (1){
+        read_user_window_input(&window);
+        process_user_window_input(&window);
+    }
+
+    
+    // ----------------- DEMO 2: CWT IMG INPUT -----------------
     cwt_test();
 
     uint8_t is_known_answer_test = 1;
@@ -343,6 +361,8 @@ void demo_test_cnn(void)
     }else{
         printf("*** DEMO ENABLED ***");
         print_sampleinput();
+
+        
     }
     printf("*** CNN Inference Test bearingnet ***");
     // Enable peripheral, enable CNN interrupt, turn on CNN clock

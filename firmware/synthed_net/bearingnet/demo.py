@@ -6,13 +6,22 @@ import numpy as np
 
 zlistq = list(np.load("/Users/sam/Repositories/ethz/bearings-max78000/data/demo/zlistq_from_averaging_30_windows.npy").astype(np.uint8))
 input_imgs = list(np.load("/Users/sam/Repositories/ethz/bearings-max78000/data/demo/input_imgs_from_averaging_30_windows.npy").astype(np.uint8))
+input_windows = list(np.load("/Users/sam/Repositories/ethz/bearings-max78000/data/demo/input_windows_from_averaging_30_windows.npy").astype(np.double))
+
 
 #max78000 feather board
 PRODUCT_ID = 516 
 DEVICE_ID = 3368
 BAUD_RATE = 115200
-CHUNKS_LEN = 50
 
+CHUNKS_LEN = 50
+WINDOW_LEN = 200
+
+
+float_chunks = [input_windows[0][:WINDOW_LEN//2], input_windows[0][WINDOW_LEN//2:]]
+for float_chunk in float_chunks:
+    float_string = ' '.join(['%f'% i for i in float_chunk])
+    print(float_string)
 
 def find_serial_port():
     """Finds and returns the first available serial port."""
