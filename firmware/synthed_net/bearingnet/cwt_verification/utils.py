@@ -21,7 +21,7 @@ DT = 1
 DJ = 0.1*3 #spacing between scales
 S0 = 2.5*DT #smallest scale
 POW = 2 
-REFERENCE = 0.05
+REFERENCE = 0.09
 
 '''
 s0 is the smallest scale, 

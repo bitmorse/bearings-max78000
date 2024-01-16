@@ -49,11 +49,19 @@ class IMSBearingsDataset(Dataset):
 
     def __getitem__(self, idx):
         spectrogram = self.samples[idx]
+        
+        assert spectrogram.shape[0] == 50
+        assert spectrogram.shape[1] == 50
+        
+        #cut off 1 px board of spectrogram
         label = spectrogram
+        
+        assert label.shape[0] == 50
+        assert label.shape[1] == 50
         
         if self.transform:
             spectrogram = self.transform(spectrogram)
-            label = spectrogram
+            label =  self.transform(spectrogram)
             
         return spectrogram, label
 
@@ -67,8 +75,8 @@ def ims_bearings_get_datasets(data, load_train=False, load_test=False, full=Fals
 
     if load_train:
         train_transform = transforms.Compose([
-            #transforms.ToPILImage(),
-            #transforms.ToTensor(),
+            transforms.ToPILImage(),
+            transforms.ToTensor(),
             ai8x.normalize(args=args)
         ])
 
@@ -78,8 +86,8 @@ def ims_bearings_get_datasets(data, load_train=False, load_test=False, full=Fals
 
     if load_test:
         test_transform = transforms.Compose([
-            #transforms.ToPILImage(),
-            #transforms.ToTensor(),
+            transforms.ToPILImage(),
+            transforms.ToTensor(), 
             ai8x.normalize(args=args)
         ])
 
@@ -97,32 +105,8 @@ Dataset description
 datasets = [
     {
         'name': 'ims_bearings',
-        'input': (1, 64, 64),
-        'output': (1, 64, 64),
+        'input': (1, 50, 50),
+        'output': (1, 50, 50),
         'loader': ims_bearings_get_datasets,
     }
 ]
-
-
-
-# if __name__ == '__main__':
-#     # dataset, _ = memes_get_datasets("./data/memes/train/", True)
-#     dataloader = DataLoader(memes_get_datasets("./data", load_train=False, load_test=True), batch_size=4,
-#                         shuffle=True, num_workers=0)
-
-#     fig, ax = plt.subplots(4, 4)
-
-#     for i_batch, sample_batched in enumerate(dataloader):
-#         print(i_batch, sample_batched[0].size(),
-#             sample_batched[1].size())
-
-#         # observe 4th batch and stop.
-#         if i_batch < 4:
-#             for i, img in enumerate(sample_batched[0]):
-#                 print(img.shape)
-#                 ax[i_batch, i].imshow(img.permute((1,2,0)))
-                
-#     plt.title('Batch from dataloader')
-#     plt.axis('off')
-#     plt.ioff()
-#     plt.show()

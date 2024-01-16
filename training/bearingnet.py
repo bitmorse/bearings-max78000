@@ -31,22 +31,22 @@ class BearingNet(nn.Module):
         # Keep track of image dimensions so one constructor works for all image sizes
         dim_x, dim_y = dimensions
 
-        self.conv1 = ai8x.FusedConv2dReLU(in_channels = num_channels, out_channels = 50, kernel_size = 3,
+        self.conv1 = ai8x.FusedConv2dReLU(in_channels = num_channels, out_channels = 64, kernel_size = 3,
                                           padding=1, bias=bias, **kwargs)
-        #dim=50*50*50
+        #dim=50*50*64
         
         
-        self.conv2 = ai8x.FusedMaxPoolConv2dReLU(in_channels = 50, out_channels = 32, kernel_size = 3,
+        self.conv2 = ai8x.FusedMaxPoolConv2dReLU(in_channels = 64, out_channels = 32, kernel_size = 3,
                                           padding=1, pool_size=2,pool_stride=2,pool_dilation=1, bias=bias, **kwargs)
         dim_x //= 2 
         dim_y //= 2
-        #dim=32*32*4
+        #dim=25*25*4
         
         self.conv3 = ai8x.FusedMaxPoolConv2dReLU(in_channels = 32, out_channels = 16, kernel_size = 3,
                                           padding=1, pool_size=2,pool_stride=2,pool_dilation=1, bias=bias, **kwargs)
         dim_x //= 2 
         dim_y //= 2
-        #dim=16*16*8
+        #dim=12*12*8
         
         self.latent_unflatten_dim = 12
         
@@ -54,11 +54,16 @@ class BearingNet(nn.Module):
                                           padding=1, pool_size=2,pool_stride=2,pool_dilation=1,bias=bias, **kwargs)
         dim_x //= 2  
         dim_y //= 2
-        #dim=8*8*2
+        #dim=6*6*2
+        
+        self.latent_dim_x = dim_x
+        self.latent_dim_y = dim_y
 
 
         self.fc1 = ai8x.FusedLinearReLU(dim_x*dim_y*self.latent_unflatten_dim, 2, bias=bias, **kwargs)
         self.z = ai8x.FusedLinearReLU(2, dim_x*dim_y*self.latent_unflatten_dim, bias=bias, **kwargs)
+        
+        
         
         '''
         ConvTranspose2d:
@@ -66,32 +71,31 @@ class BearingNet(nn.Module):
         Padding can be 0, 1, or 2.
         Stride is fixed to [2, 2]. Output padding is fixed to 1.
         '''
-        #dim=8*8*2
+        #dim=6*6*2
         self.deconv1 = ai8x.FusedConvTranspose2dReLU(in_channels = self.latent_unflatten_dim, out_channels = 16, kernel_size = 3, stride=2,
                                           padding=1, bias=bias, **kwargs)
         
         dim_x *= 2  
         dim_y *= 2
-        #dim=16*16*8
+        #dim=12*12*8
 
         self.deconv2 = ai8x.FusedConvTranspose2dReLU(in_channels = 16, out_channels = 32, kernel_size = 3, stride=2,
                                           padding=1, bias=bias, **kwargs)
         dim_x *= 2  
         dim_y *= 2
-        #dim=32*32*4
+        #dim=24*24*4
         
-        self.deconv3 = ai8x.FusedConvTranspose2dReLU(in_channels = 32, out_channels = 50, kernel_size = 3, stride=2,
+         
+        self.deconv3 = ai8x.FusedConvTranspose2dReLU(in_channels = 32, out_channels = 64, kernel_size = 3, stride=2,
                                           padding=1, bias=bias, **kwargs)
         dim_x *= 2  
         dim_y *= 2
+        #dim=48*48*4
+        
+        self.conv5 = ai8x.Conv2d(in_channels = 64, out_channels = num_channels, kernel_size = 3,
+                                          padding=2, bias=bias, wide=True, **kwargs)
+        
         #dim=50*50*4
-        
-        self.conv5 = ai8x.Conv2d(in_channels = 50, out_channels = num_channels, kernel_size = 3,
-                                          padding=1, bias=bias, wide=True, **kwargs)
-        
-        
-        assert dim_x == 50
-        assert dim_y == 50
         assert bias == False
         
         for m in self.modules():
@@ -114,7 +118,7 @@ class BearingNet(nn.Module):
         x = self.z(x)
         
         #unflatten to dim=8*8*4
-        x = x.view(x.size(0), self.latent_unflatten_dim, 8, 8)
+        x = x.view(x.size(0), self.latent_unflatten_dim,  self.latent_dim_x,  self.latent_dim_y)
 
         x = self.deconv1(x)
         x = self.deconv2(x)
