@@ -13,7 +13,7 @@ layers:
     op: conv2d
     kernel_size: 3x3
     data_format: HWC
-    quantization: 8
+    quantization: 4
 
   # Layer 1: MaxPool and Conv2d with ReLU
   #dim:  64*64*64 --> 32*32*32
@@ -26,7 +26,7 @@ layers:
     output_processors: 0x0000.0000.ffff.ffff
     op: conv2d
     kernel_size: 3x3
-    quantization: 8
+    quantization: 4
 
   # Layer 2: MaxPool and Conv2d with ReLU
   #dim:   32*32*32 --> 16*16*16
@@ -39,7 +39,7 @@ layers:
     output_processors: 0x0000.0000.0000.ffff
     op: conv2d
     kernel_size: 3x3
-    quantization: 8
+    quantization: 4
 
   # Layer 3: MaxPool and Conv2d with ReLU
   #dim: 16*16*16  --> 8*8*12
@@ -52,7 +52,7 @@ layers:
     output_processors: 0x0000.0000.0000.0fff
     op: conv2d
     kernel_size: 3x3
-    quantization: 8
+    quantization: 4
 
   # Layer 4: Linear with ReLU (Flattening 2D to 1D)
   #dim: 8*8*12 --> 2
@@ -61,5 +61,5 @@ layers:
     flatten: true #Used in Linear layers to specify that 2D input data should be transformed to 1D data | True, False (default)                
     out_offset: 0x4000
     processors: 0x0000.0000.0000.0fff  # 16 processors for 16 input channels
-    quantization: 8
+    quantization: 4
     output: true
