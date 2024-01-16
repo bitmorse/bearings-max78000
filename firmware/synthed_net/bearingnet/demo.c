@@ -15,11 +15,18 @@
 #define DEMO_INPUT_LEN 64*64
 #define DEMO_INPUT_CHUNK_LEN 64
 
-#define INTERPOLATION_W 48
-#define INTERPOLATION_H 48
-#define SAMPLE_LENGTH 64
-#define SCALES 16
-#define MORLET 5
+#define DECIMATION 2
+
+#define INTERP_SIZE 50
+#define SAMPLE_LEN 200
+
+#define SCALES 10
+#define MORLET 4
+#define DT 1
+#define DJ 0.1*3
+#define S0 2.5*DT
+#define POW 2 
+#define REFERENCE 0.001
 
 #define PI 3.14159265358979323846
 
@@ -212,31 +219,23 @@ void call_bilinear_interpolate(double *input_image, double *input_image_interpol
 void cwt_test(void){
 
 
-
-    //double signal[SAMPLE_LENGTH];
-    //double frequency = 5;
-    //double sampling_rate = SAMPLE_LENGTH; // Assuming 1 second duration
-    //double t;
-
-    // Generate a test signal
-    /*
-    for (int i = 0; i < SAMPLE_LENGTH; i++) {
-        t = (double)i / sampling_rate;
-        signal[i] = sin(2 * PI * frequency * t);
-    }
-    */
-
     // Parameters for CWT
     const char* wave = "morl"; // Morlet wavelet
     float param = MORLET;         // Morlet parameter
-    int N = SAMPLE_LENGTH;              // Length of your signal
-    float dt = 1;          // Sampling rate (1 for example)
+    int N = SAMPLE_LEN;              // Length of your signal
+    float dt = DT;          // Sampling rate (1 for example)
     int J = SCALES;                // Total number of scales
 
-
+    float s0 = S0;
+    float dj = DJ;
+    float power = POW;
+    char * type = "pow";
+    float reference = REFERENCE;
 
     // Initialize the CWT object
     cwt_object obj = cwt_init(wave, param, N, dt, J);
+    setCWTScales(obj, s0, dj, type, power);
+
 
     printf("J: %i\n", obj->J);
     printf("dj: %f\n", obj->dj);
@@ -247,15 +246,10 @@ void cwt_test(void){
     // Perform the Continuous Wavelet Transform
     cwt(obj, mean_normal_signal); 
 
-    //printf("signal: \n");
-    //for(int i = 0; i < SAMPLE_LENGTH; i++){
-    //    printf("%f ", signal[i]);
-    //}
 
-        // Computing and printing the magnitude of the CWT output and the scales
+    // Computing and printing the magnitude of the CWT output and the scales
     printf("CWT Output NORMAL Magnitude:\n");
-    double * magnitude_array = (double *) malloc(SAMPLE_LENGTH*SCALES* sizeof(double));
-    double * magnitude_array_interpolated = (double *) malloc(INTERPOLATION_W*INTERPOLATION_H* sizeof(double));
+    double * magnitude_array = (double *) malloc(SAMPLE_LEN*SCALES* sizeof(double));
 
 
     for (int j = 0; j < obj->J; j++) {  // Iterate over scales
@@ -272,25 +266,15 @@ void cwt_test(void){
     }
     printf("\n");
 
-    call_bilinear_interpolate(magnitude_array, magnitude_array_interpolated, N, J, INTERPOLATION_W, INTERPOLATION_H);
-
-    printf("CWT Output NORMAL Interpolation:\n");
-    for (int i = 0; i < INTERPOLATION_W*INTERPOLATION_H; i++) {  // Iterate over scales
-        printf("%lf ",  magnitude_array_interpolated[i]);
-    }
-
 
     free(magnitude_array);
-    free(magnitude_array_interpolated);
-
 
 
     /* ####### FAULT SIGNAL  ################*/
     // Perform the Continuous Wavelet Transform
     cwt(obj, mean_fault_signal); 
 
-    magnitude_array = (double *) malloc(SAMPLE_LENGTH*SCALES* sizeof(double));
-    magnitude_array_interpolated = (double *) malloc(INTERPOLATION_W*INTERPOLATION_H* sizeof(double));
+    magnitude_array = (double *) malloc(SAMPLE_LEN*SCALES* sizeof(double));
 
     printf("CWT Output FAULT Magnitude:\n");
     for (int j = 0; j < obj->J; j++) {  // Iterate over scales
@@ -309,16 +293,7 @@ void cwt_test(void){
     printf("\n");
 
 
-    call_bilinear_interpolate(magnitude_array, magnitude_array_interpolated, N, J, INTERPOLATION_W, INTERPOLATION_H);
-
-    printf("CWT Output FAULT Interpolation:\n");
-
-    for (int i = 0; i < INTERPOLATION_W*INTERPOLATION_H; i++) { 
-        printf("%lf ",  magnitude_array_interpolated[i]);
-    }
-
     free(magnitude_array);
-    free(magnitude_array_interpolated);
 
 
 
@@ -329,9 +304,6 @@ void cwt_test(void){
     }
 
 
-    // Now signal[] contains the test signal similar to the generated one
-    // ... (rest of your code)
-    
 
 
 }
