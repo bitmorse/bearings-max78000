@@ -67,8 +67,8 @@ def ims_bearings_get_datasets(data, load_train=False, load_test=False, full=Fals
 
     if load_train:
         train_transform = transforms.Compose([
-            transforms.ToPILImage(),
-            transforms.ToTensor(),
+            #transforms.ToPILImage(),
+            #transforms.ToTensor(),
             ai8x.normalize(args=args)
         ])
 
@@ -78,8 +78,8 @@ def ims_bearings_get_datasets(data, load_train=False, load_test=False, full=Fals
 
     if load_test:
         test_transform = transforms.Compose([
-            transforms.ToPILImage(),
-            transforms.ToTensor(),
+            #transforms.ToPILImage(),
+            #transforms.ToTensor(),
             ai8x.normalize(args=args)
         ])
 

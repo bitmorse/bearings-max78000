@@ -19,11 +19,11 @@ class BearingNet(nn.Module):
     """
     7-Layer CNN - Lightweight image classification
     """
-    def __init__(self, num_classes=0, dimensions=(64, 64), num_channels=1, bias=False, **kwargs):
+    def __init__(self, num_classes=0, dimensions=(50, 50), num_channels=1, bias=False, **kwargs):
         super().__init__()
 
         assert dimensions[0] == dimensions[1]  # Only square supported
-        assert dimensions[0] in [64]  # Only these sizes supported
+        assert dimensions[0] in [50]  # Only these sizes supported
         
         #print("num_channels: ",num_channels)
         #print(dimensions)
@@ -31,12 +31,12 @@ class BearingNet(nn.Module):
         # Keep track of image dimensions so one constructor works for all image sizes
         dim_x, dim_y = dimensions
 
-        self.conv1 = ai8x.FusedConv2dReLU(in_channels = num_channels, out_channels = 64, kernel_size = 3,
+        self.conv1 = ai8x.FusedConv2dReLU(in_channels = num_channels, out_channels = 50, kernel_size = 3,
                                           padding=1, bias=bias, **kwargs)
-        #dim=64*64*64
+        #dim=50*50*50
         
         
-        self.conv2 = ai8x.FusedMaxPoolConv2dReLU(in_channels = 64, out_channels = 32, kernel_size = 3,
+        self.conv2 = ai8x.FusedMaxPoolConv2dReLU(in_channels = 50, out_channels = 32, kernel_size = 3,
                                           padding=1, pool_size=2,pool_stride=2,pool_dilation=1, bias=bias, **kwargs)
         dim_x //= 2 
         dim_y //= 2
@@ -80,18 +80,18 @@ class BearingNet(nn.Module):
         dim_y *= 2
         #dim=32*32*4
         
-        self.deconv3 = ai8x.FusedConvTranspose2dReLU(in_channels = 32, out_channels = 64, kernel_size = 3, stride=2,
+        self.deconv3 = ai8x.FusedConvTranspose2dReLU(in_channels = 32, out_channels = 50, kernel_size = 3, stride=2,
                                           padding=1, bias=bias, **kwargs)
         dim_x *= 2  
         dim_y *= 2
-        #dim=64*64*4
+        #dim=50*50*4
         
-        self.conv5 = ai8x.Conv2d(in_channels = 64, out_channels = num_channels, kernel_size = 3,
+        self.conv5 = ai8x.Conv2d(in_channels = 50, out_channels = num_channels, kernel_size = 3,
                                           padding=1, bias=bias, wide=True, **kwargs)
         
         
-        assert dim_x == 64
-        assert dim_y == 64
+        assert dim_x == 50
+        assert dim_y == 50
         assert bias == False
         
         for m in self.modules():
