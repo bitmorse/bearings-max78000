@@ -17,8 +17,8 @@
 
 #define INTERPOLATION_W 48
 #define INTERPOLATION_H 48
-#define SAMPLE_LENGTH 192
-#define SCALES 12
+#define SAMPLE_LENGTH 64
+#define SCALES 16
 #define MORLET 5
 
 #define PI 3.14159265358979323846
@@ -240,6 +240,8 @@ void cwt_test(void){
 
     printf("J: %i\n", obj->J);
     printf("dj: %f\n", obj->dj);
+    printf("dt: %f\n", obj->dt);
+    printf("s0: %f\n", obj->s0);
     printf("scale type: %s\n", obj->type);
 
     // Perform the Continuous Wavelet Transform
