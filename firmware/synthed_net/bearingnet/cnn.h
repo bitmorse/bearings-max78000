@@ -23,15 +23,15 @@ typedef int16_t q15_t;
 
 /*
   SUMMARY OF OPS
-  Hardware: 23,124,226 ops (22,525,440 macc; 598,786 comp; 0 add; 0 mul; 0 bitwise)
-    Layer 0: 2,621,440 ops (2,359,296 macc; 262,144 comp; 0 add; 0 mul; 0 bitwise)
-    Layer 1: 19,169,280 ops (18,874,368 macc; 294,912 comp; 0 add; 0 mul; 0 bitwise)
-    Layer 2: 1,216,512 ops (1,179,648 macc; 36,864 comp; 0 add; 0 mul; 0 bitwise)
-    Layer 3: 115,456 ops (110,592 macc; 4,864 comp; 0 add; 0 mul; 0 bitwise)
-    Layer 4: 1,538 ops (1,536 macc; 2 comp; 0 add; 0 mul; 0 bitwise)
+  Hardware: 14,050,098 ops (13,686,624 macc; 363,474 comp; 0 add; 0 mul; 0 bitwise)
+    Layer 0: 1,600,000 ops (1,440,000 macc; 160,000 comp; 0 add; 0 mul; 0 bitwise)
+    Layer 1: 11,700,000 ops (11,520,000 macc; 180,000 comp; 0 add; 0 mul; 0 bitwise)
+    Layer 2: 684,288 ops (663,552 macc; 20,736 comp; 0 add; 0 mul; 0 bitwise)
+    Layer 3: 64,944 ops (62,208 macc; 2,736 comp; 0 add; 0 mul; 0 bitwise)
+    Layer 4: 866 ops (864 macc; 2 comp; 0 add; 0 mul; 0 bitwise)
 
   RESOURCE USAGE
-  Weight memory: 26,880 bytes out of 442,368 bytes total (6.1%)
+  Weight memory: 13,104 bytes out of 442,368 bytes total (3.0%)
   Bias memory:   0 bytes out of 2,048 bytes total (0.0%)
 */
 

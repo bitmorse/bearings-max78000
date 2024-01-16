@@ -12,8 +12,8 @@
 
 #include "wavelib.h"
 
-#define DEMO_INPUT_LEN 64*64
-#define DEMO_INPUT_CHUNK_LEN 64
+#define DEMO_INPUT_LEN 50*50
+#define DEMO_INPUT_CHUNK_LEN 50
 
 #define DECIMATION 2
 
@@ -26,7 +26,7 @@
 #define DJ 0.1*3
 #define S0 2.5*DT
 #define POW 2 
-#define REFERENCE 0.001
+#define REFERENCE 0.09
 
 #define PI 3.14159265358979323846
 
@@ -35,9 +35,11 @@ volatile uint32_t cnn_time; // Stopwatch
 // Expected output of layer 4 for bearingnet given the sample input (known-answer test)
 static const uint32_t sample_output[] = SAMPLE_OUTPUT; 
 
-// 1-channel 64x64 data input (4096 bytes / 1024 32-bit words):
-// HWC 64x64, channels 0 to 0
+
+// 1-channel 50x50 data input (2500 bytes / 625 32-bit words):
+// HWC 50x50, channels 0 to 0
 static const uint32_t input_0[] = SAMPLE_INPUT_0;
+
 
 static int32_t  cnn_output[(CNN_NUM_OUTPUTS + 3) / 4]; // CNN output data
 
@@ -53,7 +55,7 @@ void load_input(uint32_t *user_input)
 {
   // This function loads the sample data input -- replace with actual data
 
-  memcpy32((uint32_t *) 0x50400000, user_input, 4096);
+  memcpy32((uint32_t *) 0x50400000, user_input, 2500);
 }
 
 int check_output(void)
@@ -68,7 +70,7 @@ int check_output(void)
     len = *ptr++;
     for (i = 0; i < len; i++)
       if ((*addr++ & mask) != *ptr++) {
-        printf("Data mismatch (%d/%d) at address 0x%08x: Expected 0x%08x, read 0x%08x.",
+        printf("Data mismatch (%d/%d) at address 0x%08x: Expected 0x%08x, read 0x%08x.\n",
                i + 1, len, addr - 1, *(ptr - 1), *(addr - 1) & mask);
         return CNN_FAIL;
       }
@@ -93,9 +95,9 @@ void cnn_inference(uint32_t * input)
 void print_sampleinput(void){
     printf("*** The sample input is: **** \n");
     //in chunks of 64
-    for(int i = 0; i < 64; i++){
-        for(int j = 0; j < 64; j++){
-            printf("%0.2x", input_0[i*64 + j]);
+    for(int i = 0; i < INTERP_SIZE; i++){
+        for(int j = 0; j < INTERP_SIZE; j++){
+            printf("%0.2x", input_0[i*INTERP_SIZE + j]);
         }
         printf("\n");
     }
@@ -323,15 +325,15 @@ void demo_test_cnn(void)
 {
     /*
     SUMMARY OF OPS
-    Hardware: 23,124,226 ops (22,525,440 macc; 598,786 comp; 0 add; 0 mul; 0 bitwise)
-        Layer 0: 2,621,440 ops (2,359,296 macc; 262,144 comp; 0 add; 0 mul; 0 bitwise)
-        Layer 1: 19,169,280 ops (18,874,368 macc; 294,912 comp; 0 add; 0 mul; 0 bitwise)
-        Layer 2: 1,216,512 ops (1,179,648 macc; 36,864 comp; 0 add; 0 mul; 0 bitwise)
-        Layer 3: 115,456 ops (110,592 macc; 4,864 comp; 0 add; 0 mul; 0 bitwise)
-        Layer 4: 1,538 ops (1,536 macc; 2 comp; 0 add; 0 mul; 0 bitwise)
+    Hardware: 14,050,098 ops (13,686,624 macc; 363,474 comp; 0 add; 0 mul; 0 bitwise)
+        Layer 0: 1,600,000 ops (1,440,000 macc; 160,000 comp; 0 add; 0 mul; 0 bitwise)
+        Layer 1: 11,700,000 ops (11,520,000 macc; 180,000 comp; 0 add; 0 mul; 0 bitwise)
+        Layer 2: 684,288 ops (663,552 macc; 20,736 comp; 0 add; 0 mul; 0 bitwise)
+        Layer 3: 64,944 ops (62,208 macc; 2,736 comp; 0 add; 0 mul; 0 bitwise)
+        Layer 4: 866 ops (864 macc; 2 comp; 0 add; 0 mul; 0 bitwise)
 
     RESOURCE USAGE
-    Weight memory: 26,880 bytes out of 442,368 bytes total (6.1%)
+    Weight memory: 13,104 bytes out of 442,368 bytes total (3.0%)
     Bias memory:   0 bytes out of 2,048 bytes total (0.0%)
     */
 
