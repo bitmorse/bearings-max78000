@@ -43,7 +43,7 @@ static const uint32_t input_0[] = SAMPLE_INPUT_0;
 
 static int32_t  cnn_output[(CNN_NUM_OUTPUTS + 3) / 4]; // CNN output data
 
-uint32_t input_serial[DEMO_INPUT_LEN]; //the input from the serial port by the user
+uint32_t input_serial[DEMO_INPUT_LEN]; //the input from the serial port by the user or produced internally by process_user_window_input
 
 // Parameters for CWT
 const char* wave = "morl"; // Morlet wavelet
@@ -220,14 +220,14 @@ void cwt_test(void){
             magnitude_array[index] = sqrt(cwt_out->output[index].re * cwt_out->output[index].re +
                                     cwt_out->output[index].im * cwt_out->output[index].im);
 
-            //PRINT DOUBLES
+            //PRINT pixels
             printf("%lf ",  magnitude_array[index]);
         }
         //printf("\n");
     }
     printf("\n");
 
-
+    cwt_free(cwt_out);
     free(magnitude_array);
 
 
@@ -254,9 +254,6 @@ void cwt_test(void){
     printf("\n");
 
 
-    free(magnitude_array);
-
-
 
     double *scales = cwt_out->scale;         // Access the scales
     printf("\nScales:\n");
@@ -264,11 +261,36 @@ void cwt_test(void){
         printf("%f, ", cwt_out->scale[j]);
     }
 
+
+    cwt_free(cwt_out);
+    free(magnitude_array);
+
+
+}
+
+//Translated version of ai8x.normalize() 
+int8_t double_to_int(double input) {
+    // Subtract 0.5
+    input -= 0.5;
+
+    // Multiply by 256
+    input *= 256.0;
+
+    // Round to nearest whole number
+    input = round(input);
+
+    // Clamp between -128 and 127
+    if (input < -128.0) {
+        input = -128.0;
+    } else if (input > 127.0) {
+        input = 127.0;
+    }
+
+    return (int8_t)input;
 }
 
 
-
-void process_user_window_input(double *window){
+void process_user_window_input(double *window, int32_t *output_image){
 
     cwt_out = cwt_init(wave, param, N, dt, J);
     setCWTScales(cwt_out, s0, dj, type, power);
@@ -277,19 +299,38 @@ void process_user_window_input(double *window){
     fflush(stdin);
     printf("CWT Normalised: \n");
     fflush(stdout);
-    
-    for (int j = 0; j < cwt_out->J; j++) {  // Iterate over scales
-        for (int i = 0; i < N; i++) {  // Iterate over signal length
+
+    int output_image_index = 0; //max is flattened image size
+
+    for (int j = 0; j < cwt_out->J ; j++) {  // Iterate over scales
+
+        double pixel_row[INTERP_SIZE];
+
+        for (int i = 0; i < N; i+=4) {  // Iterate width of output image
+
+
             int index = j * N + i;  // Assuming output is a 1D array of size J * N
             double magnitude_normalised = sqrt(cwt_out->output[index].re * cwt_out->output[index].re +
                                     cwt_out->output[index].im * cwt_out->output[index].im) / REFERENCE;
 
-            //PRINT DOUBLES
-            printf("%lf ", magnitude_normalised);
-
+            //we need to cram the 200 values we get here into just 50. we can just decimate by 4 (i+=4 above)
+            //magnitude_normalised is already the pixel value
+            pixel_row[i/4] = magnitude_normalised; //will go up to 50
         }
+
+        //each pixel here is valid for next 5 rows, so we print the row 5 times
+        for (int i=0; i < INTERP_SIZE/cwt_out->J; i++){
+            for (int k = 0; k < INTERP_SIZE; k++){
+                if (output_image_index < INTERP_SIZE*INTERP_SIZE){
+                    output_image[output_image_index] = double_to_int(pixel_row[k]);
+                }
+                output_image_index += 1;
+            }
+        }
+        
     }
-    printf("\n");
+
+    cwt_free(cwt_out);
 
 }
 
@@ -324,8 +365,39 @@ void demo_main(void)
     double window[SAMPLE_LEN];
 
     while (1){
+        MXC_Delay(SEC(2));
+
+        //clear output array
+        for(int i = 0; i < (CNN_NUM_OUTPUTS + 3) / 4; i++){
+            cnn_output[i] = 0;
+        }
+
         read_user_window_input(&window);
-        process_user_window_input(&window);
+        process_user_window_input(&window, &input_serial);
+
+        fflush(stdin);
+        fflush(stdout);
+
+        cnn_enable(MXC_S_GCR_PCLKDIV_CNNCLKSEL_PCLK, MXC_S_GCR_PCLKDIV_CNNCLKDIV_DIV1);
+        cnn_inference((uint32_t *) &input_serial);
+        cnn_unload((uint32_t *) cnn_output); 
+        cnn_disable();
+
+        uint8_t z1 = (uint8_t)(cnn_output[0] & 0x000000ff);
+        uint8_t z2 = (uint8_t)((cnn_output[0] & 0x0000ff00) >> 8);
+
+        printf("Output: %x, %x, %x\n", z1, z2, cnn_output);
+
+        //print input_serial to verify
+        printf("Input image: \n");
+        for(int i = 0; i < INTERP_SIZE; i++){
+            for(int j = 0; j < INTERP_SIZE; j++){
+                printf("%i ", input_serial[i*INTERP_SIZE + j]);
+            }
+            printf("\n");
+        }
+
+        
     }
 
     

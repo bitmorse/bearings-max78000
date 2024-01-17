@@ -4,7 +4,7 @@ import time
 import io
 import numpy as np
 
-zlistq = list(np.load("/Users/sam/Repositories/ethz/bearings-max78000/data/demo/zlistq_from_averaging_30_windows.npy").astype(np.uint8))
+zlistq = list(np.load("/Users/sam/Repositories/ethz/bearings-max78000/data/demo/zlistq_from_averaging_30_windows.npy").astype(np.int8))
 input_imgs = list(np.load("/Users/sam/Repositories/ethz/bearings-max78000/data/demo/input_imgs_from_averaging_30_windows.npy").astype(np.uint8))
 input_windows = list(np.load("/Users/sam/Repositories/ethz/bearings-max78000/data/demo/input_windows_from_averaging_30_windows.npy").astype(np.double))
 
@@ -17,11 +17,13 @@ BAUD_RATE = 115200
 CHUNKS_LEN = 50
 WINDOW_LEN = 200
 
-
-float_chunks = [input_windows[0][:WINDOW_LEN//2], input_windows[0][WINDOW_LEN//2:]]
-for float_chunk in float_chunks:
-    float_string = ' '.join(['%f'% i for i in float_chunk])
-    print(float_string)
+for IM in range(0,10):
+    float_chunks = [input_windows[IM][:WINDOW_LEN//2], input_windows[IM][WINDOW_LEN//2:]]
+    for float_chunk in float_chunks:
+        float_string = ' '.join(['%f'% i for i in float_chunk])
+        print(float_string)
+        
+    print(zlistq[IM])
 
 def find_serial_port():
     """Finds and returns the first available serial port."""
