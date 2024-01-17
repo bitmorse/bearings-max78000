@@ -13,7 +13,7 @@ input_imgs = list(np.load("/Users/sam/Repositories/ethz/bearings-max78000/data/d
 
 #data for demo with float windows
 DECIMATE_INPUT_WINDOWS = 10 #so the demo is faster
-experiment = 1 #first bit of 1 is what we trained on, 2, 3 never seen before
+experiment = 3 #first bit of 1 is what we trained on, 2, 3 never seen before
 input_windows = list(np.load("/Users/sam/Repositories/ethz/bearings-max78000/data/demo/ims_bearings_all_exp%s_b3_input_windows_from_averaging_30_windows.npy"%experiment).astype(np.double)[::DECIMATE_INPUT_WINDOWS])
 
 len_input_windows = len(input_windows)
