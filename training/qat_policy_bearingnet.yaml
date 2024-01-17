@@ -1,0 +1,3 @@
+---
+start_epoch: 10 #best here was 2 epochs before end
+weight_bits: 4 #dont forget to change the bits in the  YAML model description file! otherwise you get a weird error: assert w_max < 2**(quantization[seq]-1), print(w_max)

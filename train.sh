@@ -1,13 +1,13 @@
 #!/usr/bin/bash
 
 #setup vars for hyperparams
-export LR=0.001
+export LR=0.0005
 export OPTIMIZER=adam
-export EPOCHS=12
-export BATCH_SIZE=8
+export EPOCHS=20
+export BATCH_SIZE=2
 
-export MODEL=memenet
-export DATASET=memes
+export MODEL=bearingnet
+export DATASET=ims_bearings
 export LOSS="--regression" 
 #export SOFTMAX="--softmax"
 #export STREAMING="--fifo"
@@ -48,7 +48,7 @@ if [ ! -f "$BEST_QCKPT" ]; then
 
     conda run --live-stream -n ai8x-training \
     python train.py --enable-tensorboard $LOSS --lr $LR --optimizer $OPTIMIZER --epochs $EPOCHS --batch-size $BATCH_SIZE \
-    --deterministic --compress policies/schedule.yaml --qat-policy \
+    --deterministic --compress policies/schedule_$MODEL.yaml --qat-policy \
     policies/qat_policy_$MODEL.yaml --model $MODEL --dataset $DATASET \
     --param-hist --device MAX78000 "$@"
 

@@ -1,0 +1,65 @@
+arch: bearingnet
+dataset: ims_bearings
+
+# Define layer parameters in order of the layer sequence
+layers:
+  # Layer 0: Conv2d with ReLU, 1 input channels, 4 output channels 
+  #dim: 64*64*1 --> 64*64*64
+  - pad: 1
+    activate: ReLU
+    out_offset: 0x4000
+    processors: 0x0000000000000001
+    output_processors: 0xffff.ffff.ffff.ffff
+    op: conv2d
+    kernel_size: 3x3
+    data_format: HWC
+    quantization: 4
+
+  # Layer 1: MaxPool and Conv2d with ReLU
+  #dim:  64*64*64 --> 32*32*32
+  - max_pool: 2
+    pool_stride: 2
+    pad: 1
+    activate: ReLU
+    out_offset: 0x0000
+    processors: 0xffff.ffff.ffff.ffff
+    output_processors: 0x0000.0000.ffff.ffff
+    op: conv2d
+    kernel_size: 3x3
+    quantization: 4
+
+  # Layer 2: MaxPool and Conv2d with ReLU
+  #dim:   32*32*32 --> 16*16*16
+  - max_pool: 2
+    pool_stride: 2
+    pad: 1
+    activate: ReLU
+    out_offset: 0x4000
+    processors: 0x0000.0000.ffff.ffff
+    output_processors: 0x0000.0000.0000.ffff
+    op: conv2d
+    kernel_size: 3x3
+    quantization: 4
+
+  # Layer 3: MaxPool and Conv2d with ReLU
+  #dim: 16*16*16  --> 8*8*12
+  - max_pool: 2
+    pool_stride: 2
+    pad: 1
+    activate: ReLU
+    out_offset: 0x0000
+    processors: 0x0000.0000.0000.ffff
+    output_processors: 0x0000.0000.0000.0fff
+    op: conv2d
+    kernel_size: 3x3
+    quantization: 4
+
+  # Layer 4: Linear with ReLU (Flattening 2D to 1D)
+  #dim: 8*8*12 --> 2
+  - op: mlp
+    activate: ReLU
+    flatten: true #Used in Linear layers to specify that 2D input data should be transformed to 1D data | True, False (default)                
+    out_offset: 0x4000
+    processors: 0x0000.0000.0000.0fff  # 16 processors for 16 input channels
+    quantization: 4
+    output: true
