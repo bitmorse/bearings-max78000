@@ -9,5 +9,5 @@
 
 # Add your config here!
 LIB_CMSIS_DSP = 1
-MFLOAT_ABI = soft
+MFLOAT_ABI = hard
 
