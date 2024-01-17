@@ -116,3 +116,4 @@ Generated using `demo.py`:
 - Qiu, Hai, et al. “Wavelet Filter-Based Weak Signature Detection Method and Its Application on Rolling Element Bearing Prognostics.” Journal of Sound and Vibration, 2006. [Link](https://doi.org/10.1016/j.jsv.2005.03.007).
 - Kaji, Mohammadreza, et al. “Constructing a Reliable Health Indicator for Bearings.” Applied Sciences, 2020. [Link](https://doi.org/10.3390/app10248948).
 - Wei, Xiao, and Dirk Söffker. “Comparison of CWRU Dataset-Based Diagnosis Approaches.” European Workshop on Structural Health Monitoring, 2021. [Link](https://doi.org/10.1007/978-3-030-64594-6_51).
+- Wavelib Library: https://github.com/rafat/wavelib/wiki (my modifications to make it run with Python: https://github.com/bitmorse/wavelib)
