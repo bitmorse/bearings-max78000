@@ -379,6 +379,7 @@ void demo_main(void)
     float current_health; //smoothed health value
     float previous_health;
     float alpha = 0.05; //smoothing factor
+    int smooth_on = 0;
 
     while (1){
         //MXC_Delay(SEC(2));
@@ -404,10 +405,17 @@ void demo_main(void)
         int8_t z1 = (int8_t)(cnn_output[0] & 0x000000ff);
         int8_t z2 = (int8_t)((cnn_output[0] & 0x0000ff00) >> 8);
 
-
-        current_health =  sqrt(z1*z1 + z2*z2);
-        current_health = alpha * current_health + (1 - alpha) * previous_health; //exponential smoothing
-
+        if (smooth_on < 5){
+            //just average for the first 5 iterations
+            current_health = sqrt(z1*z1 + z2*z2);
+            previous_health += current_health;
+            previous_health = previous_health/smooth_on;
+            smooth_on++;
+        }else{
+            current_health =  sqrt(z1*z1 + z2*z2);
+            current_health = alpha * current_health + (1 - alpha) * previous_health; //exponential smoothing after first iteration
+        }
+        
         previous_health = current_health;
 
         //stop timer here
