@@ -187,6 +187,7 @@ void get_user_input(uint8_t is_known_answer_test)
     //is 0x7f for known answer test
     uint8_t z2 = (uint8_t)((cnn_output[0] & 0x0000ff00) >> 8);
 
+
     if (is_known_answer_test){
         printf("Output: Comparing known input with serial input gave %d errors. CNN result: [%x, %x, %x] \n", mismatch_count, z1, z2, cnn_output);
     }else{
@@ -296,9 +297,11 @@ void process_user_window_input(double *window, int32_t *output_image){
     setCWTScales(cwt_out, s0, dj, type, power);
     cwt(cwt_out, window);
 
+    /*
     fflush(stdin);
     printf("CWT Normalised: \n");
     fflush(stdout);
+    */
 
     int output_image_index = 0; //max is flattened image size
 
@@ -335,19 +338,29 @@ void process_user_window_input(double *window, int32_t *output_image){
 }
 
 void read_user_window_input(double *window){
-
-    printf("Enter window: \n");
+    int chunks = 2;
+    int chunk_len = SAMPLE_LEN/2;
 
     fflush(stdin);
     fflush(stdout);
 
-    for (int i = 0; i < SAMPLE_LEN; i += 1) {
-        if (scanf("%lf", &window[i]) != 1) {
-            // Handle error, e.g., not enough inputs
-            break;
-        }
-    }
+    for (int chunk = 0; chunk < chunks; chunk++){
+        printf("\nfloat_chunk(%d of %d):\n", chunk+1, chunks); //\n before float_chunk is important to flush the serial buffer in python!
 
+        for (int i = 0; i < chunk_len; i += 1) {
+            if (scanf("%lf", &window[chunk*chunk_len + i]) != 1) {
+                // Handle error, e.g., not enough inputs
+                break;
+            }
+        }
+        fflush(stdin);
+        fflush(stdout);
+    }
+    
+    printf("\n"); //do not remove this! it is needed to flush the serial buffer
+    fflush(stdin);
+    fflush(stdout);
+    /*
     fflush(stdin);
     printf("Window: \n");
     fflush(stdout);
@@ -355,7 +368,7 @@ void read_user_window_input(double *window){
     for(int i = 0; i < SAMPLE_LEN; i++){
         printf("%lf ", window[i]);
     }
-
+    */
 }
 
 void demo_main(void)
@@ -363,9 +376,12 @@ void demo_main(void)
     // ----------------- DEMO 1: DIRECT INPUT -----------------
 
     double window[SAMPLE_LEN];
+    float current_health; //smoothed health value
+    float previous_health;
+    float alpha = 0.05; //smoothing factor
 
     while (1){
-        MXC_Delay(SEC(2));
+        //MXC_Delay(SEC(2));
 
         //clear output array
         for(int i = 0; i < (CNN_NUM_OUTPUTS + 3) / 4; i++){
@@ -373,6 +389,8 @@ void demo_main(void)
         }
 
         read_user_window_input(&window);
+
+        MXC_TMR_SW_Start(CNN_INFERENCE_TIMER); //abuse of this timer to time the preprocessing (Approximate inference time alone is: 3868 us)
         process_user_window_input(&window, &input_serial);
 
         fflush(stdin);
@@ -383,11 +401,21 @@ void demo_main(void)
         cnn_unload((uint32_t *) cnn_output); 
         cnn_disable();
 
-        uint8_t z1 = (uint8_t)(cnn_output[0] & 0x000000ff);
-        uint8_t z2 = (uint8_t)((cnn_output[0] & 0x0000ff00) >> 8);
+        int8_t z1 = (int8_t)(cnn_output[0] & 0x000000ff);
+        int8_t z2 = (int8_t)((cnn_output[0] & 0x0000ff00) >> 8);
 
-        printf("Output: %x, %x, %x\n", z1, z2, cnn_output);
 
+        current_health =  sqrt(z1*z1 + z2*z2);
+        current_health = alpha * current_health + (1 - alpha) * previous_health; //exponential smoothing
+
+        previous_health = current_health;
+
+        //stop timer here
+        cnn_time = MXC_TMR_SW_Stop(CNN_INFERENCE_TIMER);
+        printf("Output: %i %i %u %u\n", z1, z2, (uint8_t)current_health, cnn_time);
+        cnn_time = 0;
+
+        /*
         //print input_serial to verify
         printf("Input image: \n");
         for(int i = 0; i < INTERP_SIZE; i++){
@@ -396,8 +424,8 @@ void demo_main(void)
             }
             printf("\n");
         }
+        */
 
-        
     }
 
     

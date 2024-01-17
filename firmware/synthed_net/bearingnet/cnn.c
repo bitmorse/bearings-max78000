@@ -64,7 +64,8 @@ void CNN_ISR(void)
 
   CNN_COMPLETE; // Signal that processing is complete
 #ifdef CNN_INFERENCE_TIMER
-  cnn_time = MXC_TMR_SW_Stop(CNN_INFERENCE_TIMER);
+  //cnn_time = MXC_TMR_SW_Stop(CNN_INFERENCE_TIMER);
+  cnn_time = 1;
 #else
   cnn_time = 1;
 #endif
@@ -417,7 +418,7 @@ int cnn_start(void)
   *((volatile uint32_t *) 0x50d00000) = 0x00100809; // Enable quadrant 3
 
 #ifdef CNN_INFERENCE_TIMER
-  MXC_TMR_SW_Start(CNN_INFERENCE_TIMER);
+  //MXC_TMR_SW_Start(CNN_INFERENCE_TIMER); //we abuse start this timer already at preprocessing step
 #endif
 
   CNN_START; // Allow capture of processing time

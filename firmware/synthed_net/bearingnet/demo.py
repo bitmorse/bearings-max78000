@@ -3,10 +3,30 @@ import serial.tools.list_ports
 import time
 import io
 import numpy as np
+import matplotlib.pyplot as plt
+plt.style.use('ggplot')
 
+
+#data for demo with hex images
 zlistq = list(np.load("/Users/sam/Repositories/ethz/bearings-max78000/data/demo/zlistq_from_averaging_30_windows.npy").astype(np.int8))
 input_imgs = list(np.load("/Users/sam/Repositories/ethz/bearings-max78000/data/demo/input_imgs_from_averaging_30_windows.npy").astype(np.uint8))
-input_windows = list(np.load("/Users/sam/Repositories/ethz/bearings-max78000/data/demo/input_windows_from_averaging_30_windows.npy").astype(np.double))
+
+#data for demo with float windows
+DECIMATE_INPUT_WINDOWS = 10 #so the demo is faster
+experiment = 1 #first bit of 1 is what we trained on, 2, 3 never seen before
+input_windows = list(np.load("/Users/sam/Repositories/ethz/bearings-max78000/data/demo/ims_bearings_all_exp%s_b3_input_windows_from_averaging_30_windows.npy"%experiment).astype(np.double)[::DECIMATE_INPUT_WINDOWS])
+
+len_input_windows = len(input_windows)
+len_input_imgs = len(input_imgs)
+
+
+#for live plot
+x_size = len_input_windows
+x_vec = np.linspace(0,1,x_size+1)[0:-1]
+y_vec = np.random.randn(len(x_vec))
+line1 = []
+
+print("Demo will run with {} input windows (demo 1 selected) or {} input images (if demo 2 selected)".format(len_input_windows, len_input_imgs))
 
 
 #max78000 feather board
@@ -17,13 +37,40 @@ BAUD_RATE = 115200
 CHUNKS_LEN = 50
 WINDOW_LEN = 200
 
-for IM in range(0,10):
-    float_chunks = [input_windows[IM][:WINDOW_LEN//2], input_windows[IM][WINDOW_LEN//2:]]
+def live_plotter(x_vec,y1_data,line1,identifier='',pause_time=0.1):
+    if line1==[]:
+        # this is the call to matplotlib that allows dynamic plotting
+        plt.ion()
+        fig = plt.figure(figsize=(13,6))
+        ax = fig.add_subplot(111)
+        # create a variable for the line so we can later update it
+        line1, = ax.plot(x_vec,y1_data,'-o',alpha=0.8)        
+        #update plot label/title
+        plt.ylabel('Y Label')
+        plt.title('Title: {}'.format(identifier))
+        plt.show()
+    
+    # after the figure, axis, and line are created, we only need to update the y-data
+    line1.set_ydata(y1_data)
+    # adjust limits if new data goes beyond bounds
+    if np.min(y1_data)<=line1.axes.get_ylim()[0] or np.max(y1_data)>=line1.axes.get_ylim()[1]:
+        plt.ylim([np.min(y1_data)-np.std(y1_data),np.max(y1_data)+np.std(y1_data)])
+    # this pauses the data so the figure/axis can catch up - the amount of pause can be altered above
+    plt.pause(pause_time)
+    
+    # return line so we can update it again in the next iteration
+    return line1
+
+
+def convert_window_to_float_chunks(input_window):
+    float_chunks = [input_window[:WINDOW_LEN//2], input_window[WINDOW_LEN//2:]]
+    float_strings = []
     for float_chunk in float_chunks:
         float_string = ' '.join(['%f'% i for i in float_chunk])
-        print(float_string)
-        
-    print(zlistq[IM])
+        float_strings.append(float_string)
+    
+    return float_strings
+
 
 def find_serial_port():
     """Finds and returns the first available serial port."""
@@ -41,15 +88,26 @@ if port is None:
 # Establish serial connection
 ser = serial.Serial(port, BAUD_RATE, timeout=1)
 chunks_written = 0
+float_chunks_written = 0
 chunks_wrong = 0
 j = 0
 
+PROCESS_HEX_IMAGE_DEMO = 0
+PROCESS_WIN_DEMO = 1
+
 IDLE_STATE = 0
+# DEMO 2 states (hex chunks of image)
 READING_CHUNKS_STATE = 1
 WRITING_CHUNK_STATE = 2
 VERIFY_CHUNK_STATE = 3
 PROCESS_OUTPUT_STATE = 4
-    
+
+# DEMO 1 states (long chunks of window)
+WRITING_WIN_CHUNK_STATE = 11
+VERIFY_WIN_CHUNK_STATE = 22
+PROCESS_WIN_OUTPUT_STATE = 33
+
+
 def reset(ser):
     ser.close()
     ser.open()
@@ -60,8 +118,10 @@ try:
     current_state = 0
     start_time = 0
     hex_lines = []
+    float_lines = [] #i.e. line of float values 
     chunk = ""
     local_label = ""
+    demo = PROCESS_WIN_DEMO
     
     ser.flush() # it is buffering. required to get the data out *now*
     hello = ser.readline()
@@ -84,11 +144,70 @@ try:
             if len(hex_lines) >= CHUNKS_LEN:
                 print("Read {} lines".format(len(hex_lines)))
                 print("Changing state to WRITING_CHUNK_STATE")
-                current_state = WRITING_CHUNK_STATE
+                
+                if demo == PROCESS_HEX_IMAGE_DEMO:
+                    current_state = WRITING_CHUNK_STATE
+                else:
+                    print("Demo: PROCESS WINDOW")
+                    time.sleep(3)
+                    current_state = IDLE_STATE
                 start_time = time.time()
+                
+        
+        ## -- DEMO 1 -- ##
+        elif current_state == WRITING_WIN_CHUNK_STATE and "float_chunk(" in line:
+            float_chunk = float_lines.pop(0).strip()
+
+            #send a chunk
+            b = ("%s\r"%float_chunk)
+            ser.write(b.encode("utf-8"))
+            float_chunks_written += 1
+            ser.flush()
+            
+            current_state = VERIFY_WIN_CHUNK_STATE
+        
+        elif current_state == VERIFY_WIN_CHUNK_STATE and "float_chunk(" not in line:
+            if float_chunk != line:
+                print("Chunk wrong!")
+            else:
+                #print("Chunk correct")
+                pass
+            
+            if float_chunks_written >= 2:
+                end_time = time.time()
+                #print("Writing {} float chunks took {} seconds".format(float_chunks_written, end_time - start_time))
+                float_chunks_written = 0
+                current_state = PROCESS_WIN_OUTPUT_STATE
+            else:
+                current_state = WRITING_WIN_CHUNK_STATE
+                
+                
+        elif len(float_lines) == 0 and "Output: " in line and current_state == PROCESS_WIN_OUTPUT_STATE:
+            #print("Changing state to IDLE_STATE")
+            output = line.split(' ')
+            print(output)
+            z1 = output[1]
+            z2 = output[2]
+            health_indicator = output[3]
+            total_processing_time = output[4]
+            end_time = time.time()
+            
+            #add to live plot
+            y_vec[-1] = health_indicator
+            line1 = live_plotter(x_vec,y_vec,line1)
+            y_vec = np.append(y_vec[1:],0.0)
+            
+            current_state = IDLE_STATE
+            
+            print("Health indicator: {}".format(health_indicator))
+            print("total_processing_time on uc in us: {}".format(total_processing_time))
+            print("Total time: {} seconds".format(end_time - start_time))
+
+                
+        ## -- DEMO 2 -- ##
         
         elif len(hex_lines) == 0 and current_state == WRITING_CHUNK_STATE:
-            print("Changing state to IDLE_STATE")
+            #print("Changing state to IDLE_STATE")
             current_state = IDLE_STATE
         
         elif current_state == WRITING_CHUNK_STATE and "chunk(" in line:
@@ -124,25 +243,35 @@ try:
             current_state = IDLE_STATE
         
         elif current_state == IDLE_STATE:
-            if j < 100:
-                print("Changing state to WRITING_CHUNK_STATE")
-                            
-                image = input_imgs.pop(0)
-                local_label = zlistq.pop(0)
+            if j < len_input_windows:
                 
-                #in hex
-                local_label = ''.join(format(i, '02x') for i in local_label)
+                if demo == PROCESS_HEX_IMAGE_DEMO:
+                    image = input_imgs.pop(0)
+                    local_label = zlistq.pop(0)
+                    #in hex
+                    local_label = ''.join(format(i, '02x') for i in local_label)
+                    
+                    hex_encoded_rows = []
+                    for row in image[0]:
+                        # Ensure that the row is flattened to a 1D array
+                        flat_row = row.flatten()
+                        # Convert each element in the flat_row to a 2-character hex string
+                        hex_row = ''.join(format(i, '02x') for i in flat_row)
+                        hex_encoded_rows.append(hex_row)
+                    
+                    hex_lines = hex_encoded_rows.copy() # set a new input, copy!
+                    current_state = WRITING_CHUNK_STATE
+                    print("Changing state to WRITING_CHUNK_STATE (%i of %i)" % (j, len_input_imgs) )
+                    
+                    
+                else:
+                    input_window = input_windows.pop(0)
+                    float_encoded_chunks = convert_window_to_float_chunks(input_window)
+                    float_lines = float_encoded_chunks.copy()
+                    current_state = WRITING_WIN_CHUNK_STATE
+                    print("Changing state to WRITING_WIN_CHUNK_STATE (%i of %i)" % (j, len_input_windows))
+                    
                 
-                hex_encoded_rows = []
-                for row in image[0]:
-                    # Ensure that the row is flattened to a 1D array
-                    flat_row = row.flatten()
-                    # Convert each element in the flat_row to a 2-character hex string
-                    hex_row = ''.join(format(i, '02x') for i in flat_row)
-                    hex_encoded_rows.append(hex_row)
-                
-                hex_lines = hex_encoded_rows.copy() # set a new input, copy!
-                current_state = WRITING_CHUNK_STATE
                 start_time = time.time()
                 j += 1
             
