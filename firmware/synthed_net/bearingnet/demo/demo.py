@@ -54,14 +54,14 @@ def live_plotter(x_vec,y1_data,line1,processing_time=0,pause_time=0.1):
         plt.ylabel('Health Indicator')
         plt.xlabel('File Index')
         plt.show()
-        plt.ylim([20+60,128+60])
+        #plt.ylim([20+60,128+60])
     
     # after the figure, axis, and line are created, we only need to update the y-data
     line1.set_ydata(y1_data)
     plt.title('Dataset: NASA IMS, Bearing: {}, Experiment: {}, Time/Sample: {}ms'.format(BEARING, EXPERIMENT,int(processing_time)//1000))
     # adjust limits if new data goes beyond bounds
-    #if np.min(y1_data)<=line1.axes.get_ylim()[0] or np.max(y1_data)>=line1.axes.get_ylim()[1]:
-    #    plt.ylim([np.min(y1_data)-np.std(y1_data),np.max(y1_data)+np.std(y1_data)])
+    if np.min(y1_data)<=line1.axes.get_ylim()[0] or np.max(y1_data)>=line1.axes.get_ylim()[1]:
+        plt.ylim([np.min(y1_data)-np.std(y1_data),np.max(y1_data)+np.std(y1_data)])
     # this pauses the data so the figure/axis can catch up - the amount of pause can be altered above
     plt.pause(pause_time)
     
