@@ -77,25 +77,25 @@ class BearingNet(nn.Module):
         
         dim_x *= 2  
         dim_y *= 2
-        #dim=12*12*8
+        #dim=12*12*16
 
         self.deconv2 = ai8x.FusedConvTranspose2dReLU(in_channels = 16, out_channels = 32, kernel_size = 3, stride=2,
                                           padding=1, bias=bias, **kwargs)
         dim_x *= 2  
         dim_y *= 2
-        #dim=24*24*4
+        #dim=24*24*32
         
          
         self.deconv3 = ai8x.FusedConvTranspose2dReLU(in_channels = 32, out_channels = 64, kernel_size = 3, stride=2,
                                           padding=1, bias=bias, **kwargs)
         dim_x *= 2  
         dim_y *= 2
-        #dim=48*48*4
+        #dim=48*48*64
         
         self.conv5 = ai8x.Conv2d(in_channels = 64, out_channels = num_channels, kernel_size = 3,
                                           padding=2, bias=bias, wide=True, **kwargs)
         
-        #dim=50*50*4
+        #dim=50*50*1
         assert bias == False
         
         for m in self.modules():
