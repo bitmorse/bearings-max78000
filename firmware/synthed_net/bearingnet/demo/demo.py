@@ -12,7 +12,7 @@ zlistq = list(np.load("/Users/sam/Repositories/ethz/bearings-max78000/data/demo/
 input_imgs = list(np.load("/Users/sam/Repositories/ethz/bearings-max78000/data/demo/input_imgs_from_averaging_30_windows.npy").astype(np.uint8))
 
 #data for demo with float windows
-DECIMATE_INPUT_WINDOWS = 10 #so the demo is faster
+DECIMATE_INPUT_WINDOWS = 30 #so the demo is faster
 EXPERIMENT = 1 #first bit of 1 is what we trained on (also we left out "early" in experiment 1, around 330 files), 2, 3 never seen before
 BEARING = 3
 input_windows = list(np.load("ims_bearings_all_exp%s_b%s_input_windows_from_averaging_30_windows.npy"%(EXPERIMENT, BEARING) ).astype(np.double)[::DECIMATE_INPUT_WINDOWS])
